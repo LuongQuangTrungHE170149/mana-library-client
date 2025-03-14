@@ -4,55 +4,54 @@ Here's a comprehensive list of all API endpoints used in the library management 
 
 ## Authentication Endpoints
 
-- `POST /auth/login` - User login with credentials
-- `POST /auth/register` - Create new user account
-- `POST /auth/reset/request` - Request password reset
-- `POST /auth/reset/verify` - Verify reset token
-- `POST /auth/reset/complete` - Complete password reset
-- `POST /auth/2fa/setup` - Set up two-factor authentication
-- `POST /auth/2fa/verify` - Verify 2FA setup
-- `POST /auth/2fa/login` - Login with 2FA code
-- `POST /auth/oauth/{provider}` - OAuth authentication
-- `POST /auth/logout` - User logout
-- `POST /auth/refresh` - Refresh authentication token
-
-## User Endpoints
-
-- `GET /users/me` - Get current user profile
-- `PATCH /users/me` - Update user profile
-- `POST /users/password` - Change password
-- `GET /users/me/books/borrowed` - Get currently borrowed books
-- `GET /users/me/books/history` - Get borrowing history
-- `GET /users/me/books/favorites` - Get favorite books
-- `POST /users/me/books/favorites/{bookId}` - Add book to favorites
-- `DELETE /users/me/books/favorites/{bookId}` - Remove from favorites
-- `GET /users/me/notifications` - Get user notifications
-- `PATCH /users/me/notifications/{notificationId}` - Mark notification as read
-- `GET /users` - Admin: Get all users
-- `GET /users/{userId}` - Admin: Get specific user
-- `PATCH /users/{userId}` - Admin: Update user
-- `PATCH /users/{userId}/role` - Admin: Change user role
-- `GET /users/metrics` - Admin: Get user metrics
+- `POST /api/v1/auth/login` - User login with credentials
+- `POST /api/v1/auth/register` - Create new user account
+- `POST /api/v1/auth/reset` - Reset password
+- `POST /api/v1/auth/verify` - Verify account
+- `POST /api/v1/auth/send-code` - Send verification code
+- `GET /api/v1/auth/2fa` - Generate 2FA setup QR code
+- `PUT /api/v1/auth/2fa` - Toggle 2FA
+- `POST /api/v1/auth/refresh` - Refresh JWT token
 
 ## Book Endpoints
 
-- `GET /books` - Get books catalog with filters
-- `GET /books/{bookId}` - Get specific book details
-- `GET /books/search` - Search books
-- `GET /books/recommendations` - Get personalized recommendations
-- `POST /books/{bookId}/borrow` - Borrow a book
-- `POST /books/{bookId}/return` - Return a book
-- `POST /books/{bookId}/reserve` - Reserve a book
-- `DELETE /books/{bookId}/reserve` - Cancel reservation
-- `GET /books/isbn/{isbn}` - Get book by ISBN/barcode
+- `GET /api/v1/books` - Get all books (with filtering)
+- `GET /api/v1/books/:bookId` - Get specific book details
+- `POST /api/v1/books` - Create a new book
+- `PATCH /api/v1/books/:bookId` - Update a book
+- `DELETE /api/v1/books/:bookId` - Delete a book
+- `GET /api/v1/books/search` - Search for books
+- `POST /api/v1/books/:bookId/borrow` - Borrow a book
+- `POST /api/v1/books/:bookId/return` - Return a book
+- `POST /api/v1/books/:bookId/reserve` - Reserve a book
+- `POST /api/v1/books/:bookId/cancel-reservation` - Cancel reservation
+- `GET /api/v1/books/borrowed` - Get user's borrowed books
+- `GET /api/v1/books/reserved` - Get user's reserved books
+- `GET /api/v1/books/borrowed/:userId` - Get books borrowed by specific user (admin/librarian)
+- `GET /api/v1/books/reserved/:userId` - Get books reserved by specific user (admin/librarian)
 
-### Librarian & Admin Book Endpoints
+## User Endpoints
 
-- `POST /books` - Add new book
-- `PATCH /books/{bookId}` - Update book details
-- `PATCH /books/{bookId}/count` - Update book inventory count
-- `DELETE /books/{bookId}` - Remove book
-- `GET /books/stats` - Get borrowing statistics
-- `GET /books/metrics` - Get dashboard metrics
-- `POST /books/import` - Import books from file
-- `GET /books/export` - Export books catalog
+- `GET /api/v1/users` - Get current user profile
+- `POST /api/v1/users` - Create a new user (admin only)
+- `PATCH /api/v1/users/:userId` - Update user
+- `DELETE /api/v1/users/:userId` - Delete user (admin only)
+
+## Additional Endpoints (Custom Implementation)
+
+These endpoints may need custom implementation on your server:
+
+### User Features
+
+- `GET /api/v1/users/favorites` - Get user's favorite books
+- `POST /api/v1/users/favorites/:bookId` - Add book to favorites
+- `DELETE /api/v1/users/favorites/:bookId` - Remove from favorites
+- `GET /api/v1/users/notifications` - Get user notifications
+- `PATCH /api/v1/users/notifications/:notificationId` - Mark notification as read
+
+### Admin Features
+
+- `GET /api/v1/admin/metrics` - Get system metrics and dashboard data
+- `GET /api/v1/books/stats` - Get borrowing statistics
+- `POST /api/v1/books/import` - Import books from file
+- `GET /api/v1/books/export` - Export books catalog

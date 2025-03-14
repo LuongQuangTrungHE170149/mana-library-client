@@ -5,7 +5,7 @@ const authService = {
   // Login with email and password
   login: async (email, password) => {
     try {
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post("/api/v1/auth/login", { email, password });
       if (response.data.token) {
         await AsyncStorage.setItem("userToken", response.data.token);
         await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
@@ -19,7 +19,7 @@ const authService = {
   // Register new user account
   register: async (userData) => {
     try {
-      const response = await api.post("/auth/register", userData);
+      const response = await api.post("/api/v1/auth/register", userData);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
@@ -29,47 +29,47 @@ const authService = {
   // Request password reset
   requestReset: async (email) => {
     try {
-      const response = await api.post("/auth/reset/request", { email });
+      const response = await api.post("/api/v1/auth/reset", { email });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
     }
   },
 
-  // Verify reset token
-  verifyResetToken: async (token) => {
+  // Verify account or reset code
+  verifyCode: async (code, email) => {
     try {
-      const response = await api.post("/auth/reset/verify", { token });
+      const response = await api.post("/api/v1/auth/verify", { code, email });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
     }
   },
 
-  // Complete password reset
-  completeReset: async (token, newPassword) => {
+  // Send verification code
+  sendVerificationCode: async (email) => {
     try {
-      const response = await api.post("/auth/reset/complete", { token, newPassword });
+      const response = await api.post("/api/v1/auth/send-code", { email });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
     }
   },
 
-  // Setup 2FA
+  // Get 2FA setup (returns QR code)
   setup2FA: async () => {
     try {
-      const response = await api.post("/auth/2fa/setup");
-      return response.data; // Contains QR code or setup instructions
+      const response = await api.get("/api/v1/auth/2fa");
+      return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
     }
   },
 
-  // Verify 2FA setup
-  verify2FASetup: async (code) => {
+  // Toggle 2FA status
+  toggle2FA: async (enabled, code) => {
     try {
-      const response = await api.post("/auth/2fa/verify", { code });
+      const response = await api.put("/api/v1/auth/2fa", { enabled, code });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
@@ -79,21 +79,11 @@ const authService = {
   // Login with 2FA
   login2FA: async (email, password, code) => {
     try {
-      const response = await api.post("/auth/2fa/login", { email, password, code });
-      if (response.data.token) {
-        await AsyncStorage.setItem("userToken", response.data.token);
-        await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
-      }
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // OAuth login with various providers
-  oauthLogin: async (provider, token) => {
-    try {
-      const response = await api.post(`/auth/oauth/${provider}`, { token });
+      const response = await api.post("/api/v1/auth/login", {
+        email,
+        password,
+        code,
+      });
       if (response.data.token) {
         await AsyncStorage.setItem("userToken", response.data.token);
         await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
@@ -107,11 +97,11 @@ const authService = {
   // Logout and clear storage
   logout: async () => {
     try {
-      await api.post("/auth/logout");
+      // Clear local storage
       await AsyncStorage.removeItem("userToken");
       await AsyncStorage.removeItem("userData");
+      return true;
     } catch (error) {
-      // Still clear local storage even if API call fails
       await AsyncStorage.removeItem("userToken");
       await AsyncStorage.removeItem("userData");
       throw error.response ? error.response.data : new Error("Network error");
@@ -121,7 +111,7 @@ const authService = {
   // Refresh token
   refreshToken: async () => {
     try {
-      const response = await api.post("/auth/refresh");
+      const response = await api.post("/api/v1/auth/refresh");
       if (response.data.token) {
         await AsyncStorage.setItem("userToken", response.data.token);
       }

@@ -34,6 +34,7 @@ api.interceptors.response.use(
     // Handle 401 (Unauthorized) responses
     if (error.response && error.response.status === 401) {
       await AsyncStorage.removeItem("userToken");
+      // You might want to trigger a logout action or redirect to login here
     }
     return Promise.reject(error);
   }
