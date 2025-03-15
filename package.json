@@ -15,10 +15,13 @@
     "@react-navigation/stack": "^7.1.2",
     "axios": "^1.8.3",
     "expo": "~52.0.38",
+    "expo-linear-gradient": "~14.0.2",
     "expo-status-bar": "~2.0.1",
     "react": "18.3.1",
     "react-native": "0.76.7",
-    "expo-linear-gradient": "~14.0.2"
+    "react-native-paper": "^5.13.1",
+    "expo-image-picker": "~16.0.6",
+    "@react-native-community/datetimepicker": "8.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

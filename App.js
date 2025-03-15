@@ -8,8 +8,7 @@ import DarkTheme from "./theme/DarkTheme";
 // Auth and Navigation
 import AuthNavigator from "./navigation/AuthNavigator";
 import UserNavigator from "./navigation/UserNavigator";
-import AdminNavigator from "./navigation/AdminNavigator";
-import LibrarianNavigator from "./navigation/LibrarianNavigator";
+import StaffNavigator from "./navigation/StaffNavigator";
 import SplashScreen from "./screens/SplashScreen";
 
 // Contexts
@@ -33,16 +32,16 @@ const Navigation = () => {
               name="Auth"
               component={AuthNavigator}
             />
+            <Stack.Screen
+              name="Staff"
+              component={StaffNavigator}
+              options={{ headerShown: false }}
+            />
           </>
-        ) : userRole === "admin" ? (
+        ) : userRole === "admin" || userRole === "librarian" ? (
           <Stack.Screen
-            name="Admin"
-            component={AdminNavigator}
-          />
-        ) : userRole === "librarian" ? (
-          <Stack.Screen
-            name="Librarian"
-            component={LibrarianNavigator}
+            name="Staff"
+            component={StaffNavigator}
           />
         ) : (
           <Stack.Screen

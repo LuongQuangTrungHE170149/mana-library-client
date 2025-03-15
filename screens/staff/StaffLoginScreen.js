@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-const AdminLoginScreen = ({ navigation }) => {
+const StaffLoginScreen = ({ navigation }) => {
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +21,7 @@ const AdminLoginScreen = ({ navigation }) => {
     // Perform login logic here
     // For demonstration purposes, let's use a simple check
     if (account === "admin" && password === "admin123") {
-      navigation.navigate("Admin", { screen: "AdminDashboard" });
+      navigation.navigate("Staff", { screen: "StaffDashboard" });
     } else {
       setError("Invalid credentials");
     }
@@ -119,7 +119,7 @@ const AdminLoginScreen = ({ navigation }) => {
           </TouchableOpacity>
         </KeyboardAvoidingView>
 
-        <Text style={styles.versionText}>Admin Portal v1.0.0</Text>
+        <Text style={styles.versionText}>ManaLibrary v1.0.0</Text>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -205,4 +205,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AdminLoginScreen;
+export default StaffLoginScreen;

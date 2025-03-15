@@ -13,11 +13,8 @@ export const IMPLEMENTED_SCREENS = {
   // Home: true,
   // BooksList: true,
 
-  // Admin screens
-  // AdminLogin: true,
-
-  // Librarian screens
-  // LibrarianDashboard: true,
+  // Staff screens
+  StaffLogin: true,
 };
 
 /**
