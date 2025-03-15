@@ -3,16 +3,17 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import DarkTheme from "./theme/DarkTheme";
 
 // Auth and Navigation
 import AuthNavigator from "./navigation/AuthNavigator";
 import UserNavigator from "./navigation/UserNavigator";
 import AdminNavigator from "./navigation/AdminNavigator";
 import LibrarianNavigator from "./navigation/LibrarianNavigator";
+import SplashScreen from "./screens/SplashScreen";
 
 // Contexts
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { LibrarianProvider } from "./context/LibrarianContext";
 
 const Stack = createStackNavigator();
 
@@ -20,13 +21,19 @@ const Navigation = () => {
   const { userToken, userRole } = useAuth();
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={DarkTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!userToken ? (
-          <Stack.Screen
-            name="Auth"
-            component={AuthNavigator}
-          />
+          <>
+            <Stack.Screen
+              name="Splash"
+              component={SplashScreen}
+            />
+            <Stack.Screen
+              name="Auth"
+              component={AuthNavigator}
+            />
+          </>
         ) : userRole === "admin" ? (
           <Stack.Screen
             name="Admin"
@@ -53,9 +60,7 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style="auto" />
       <AuthProvider>
-        <LibrarianProvider>
-          <Navigation />
-        </LibrarianProvider>
+        <Navigation />
       </AuthProvider>
     </SafeAreaProvider>
   );

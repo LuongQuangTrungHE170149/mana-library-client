@@ -1,15 +1,15 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import TabNavigator from "./TabNavigator";
-
-// Import any additional screens that might not be part of the tab structure
-// but are accessible from user flow (e.g., search results, notifications)
-import BookDetailScreen from "../screens/user/BookDetailScreen";
-import NotificationsScreen from "../screens/user/NotificationsScreen";
-import SearchResultsScreen from "../screens/user/SearchResultsScreen";
-import EditProfileScreen from "../screens/user/EditProfileScreen";
+import { safeScreen, importScreen } from "../utils/screenUtils";
 
 const UserStack = createStackNavigator();
+
+// Use placeholders for screens that can't be resolved
+const BookDetailScreen = importScreen("../screens/user/BookDetailScreen", "Book Details");
+const NotificationsScreen = importScreen("../screens/user/NotificationsScreen", "Notifications");
+const SearchResultsScreen = importScreen("../screens/user/SearchResultsScreen", "Search Results");
+const EditProfileScreen = importScreen("../screens/user/EditProfileScreen", "Edit Profile");
 
 const UserNavigator = () => {
   return (
@@ -23,22 +23,22 @@ const UserNavigator = () => {
       {/* Screens that can be accessed from multiple tabs or deep links */}
       <UserStack.Screen
         name="BookDetail"
-        component={BookDetailScreen}
+        component={safeScreen(BookDetailScreen, "Book Details")}
         options={{ headerShown: true, title: "Book Details" }}
       />
       <UserStack.Screen
         name="Notifications"
-        component={NotificationsScreen}
+        component={safeScreen(NotificationsScreen, "Notifications")}
         options={{ headerShown: true, title: "Notifications" }}
       />
       <UserStack.Screen
         name="SearchResults"
-        component={SearchResultsScreen}
+        component={safeScreen(SearchResultsScreen, "Search Results")}
         options={{ headerShown: true, title: "Search Results" }}
       />
       <UserStack.Screen
         name="EditProfile"
-        component={EditProfileScreen}
+        component={safeScreen(EditProfileScreen, "Edit Profile")}
         options={{ headerShown: true, title: "Edit Profile" }}
       />
     </UserStack.Navigator>

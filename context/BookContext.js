@@ -1,273 +1,256 @@
-import React, { createContext, useState, useContext, useCallback } from "react";
+import React, { createContext, useState, useCallback, useContext } from "react";
 import bookService from "../services/bookService";
 import { AuthContext } from "./AuthContext";
 
 export const BookContext = createContext(null);
 
 export const BookProvider = ({ children }) => {
-  const { isAuthenticated } = useContext(AuthContext);
-
+  const { userToken } = useContext(AuthContext);
   const [books, setBooks] = useState([]);
-  const [currentBook, setCurrentBook] = useState(null);
+  const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
-  const [borrowedBooks, setBorrowedBooks] = useState([]);
-  const [reservedBooks, setReservedBooks] = useState([]);
   const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    itemsPerPage: 20,
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
   });
 
-  // Get all books with filtering
-  const fetchBooks = useCallback(async (page = 1, limit = 20, filters = {}) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await bookService.getBooks(page, limit, filters);
-      setBooks(data.books);
-      setPagination({
-        currentPage: data.currentPage,
-        totalPages: data.totalPages,
-        totalItems: data.totalItems,
-        itemsPerPage: data.itemsPerPage,
-      });
-      return data;
-    } catch (err) {
-      setError("Failed to fetch books");
-      console.error(err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Get a specific book
-  const fetchBook = useCallback(async (bookId) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const book = await bookService.getBook(bookId);
-      setCurrentBook(book);
-      return book;
-    } catch (err) {
-      setError("Failed to fetch book details");
-      console.error(err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Search for books
-  const searchBooks = useCallback(async (query, page = 1, limit = 20) => {
-    if (!query || query.trim() === "") {
-      setSearchResults([]);
-      return { books: [] };
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await bookService.searchBooks(query, page, limit);
-      setSearchResults(data.books);
-      return data;
-    } catch (err) {
-      setError("Search failed");
-      console.error(err);
-      return { books: [] };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Borrow a book
-  const borrowBook = useCallback(
-    async (bookId) => {
-      if (!isAuthenticated) {
-        setError("You must be logged in to borrow books");
-        return false;
-      }
-
-      setLoading(true);
-      setError(null);
+  const getBooks = useCallback(
+    async (page = 1, limit = 10, filters = {}) => {
       try {
-        await bookService.borrowBook(bookId);
-        // Update the current book if we're viewing that book
-        if (currentBook && currentBook.id === bookId) {
-          setCurrentBook((prev) => ({ ...prev, status: "borrowed", borrowedByMe: true }));
-        }
-        // Refresh borrowed books
-        const borrowedData = await bookService.getBorrowedBooks();
-        setBorrowedBooks(borrowedData.books || []);
-        return true;
+        setLoading(true);
+        setError(null);
+        const response = await bookService.getBooks(page, limit, filters);
+        setBooks(response.books);
+        setPagination({
+          page: response.page,
+          limit: response.limit,
+          total: response.total,
+          totalPages: response.totalPages,
+        });
+        return response;
       } catch (err) {
-        setError(err.message || "Failed to borrow book");
-        console.error(err);
-        return false;
+        setError(err.message || "Failed to fetch books");
+        return { error: err.message || "Failed to fetch books" };
       } finally {
         setLoading(false);
       }
     },
-    [isAuthenticated, currentBook]
+    [userToken]
   );
 
-  // Return a book
+  const getBook = useCallback(
+    async (id) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await bookService.getBook(id);
+        setBook(response);
+        return response;
+      } catch (err) {
+        setError(err.message || "Failed to fetch book details");
+        return { error: err.message || "Failed to fetch book details" };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userToken]
+  );
+
+  const addBook = useCallback(
+    async (bookData) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await bookService.addBook(bookData);
+        setBooks((prevBooks) => [response, ...prevBooks]);
+        return { success: true, book: response };
+      } catch (err) {
+        setError(err.message || "Failed to add book");
+        return { error: err.message || "Failed to add book" };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userToken]
+  );
+
+  const updateBook = useCallback(
+    async (id, bookData) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await bookService.updateBook(id, bookData);
+        setBooks((prevBooks) => prevBooks.map((book) => (book._id === id ? response : book)));
+        setBook(response);
+        return { success: true, book: response };
+      } catch (err) {
+        setError(err.message || "Failed to update book");
+        return { error: err.message || "Failed to update book" };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userToken]
+  );
+
+  const deleteBook = useCallback(
+    async (id) => {
+      try {
+        setLoading(true);
+        setError(null);
+        await bookService.deleteBook(id);
+        setBooks((prevBooks) => prevBooks.filter((book) => book._id !== id));
+        if (book && book._id === id) {
+          setBook(null);
+        }
+        return { success: true };
+      } catch (err) {
+        setError(err.message || "Failed to delete book");
+        return { error: err.message || "Failed to delete book" };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userToken, book]
+  );
+
+  const searchBooks = useCallback(
+    async (query, filters = {}) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await bookService.searchBooks(query, filters);
+        setSearchResults(response.books);
+        setPagination({
+          page: response.page,
+          limit: response.limit,
+          total: response.total,
+          totalPages: response.totalPages,
+        });
+        return response;
+      } catch (err) {
+        setError(err.message || "Search failed");
+        return { error: err.message || "Search failed" };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userToken]
+  );
+
+  const checkoutBook = useCallback(
+    async (bookId) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await bookService.checkoutBook(bookId);
+        // Update the book in the list and detailed view
+        setBooks((prevBooks) => prevBooks.map((book) => (book._id === bookId ? { ...book, status: "checked-out" } : book)));
+        if (book && book._id === bookId) {
+          setBook({ ...book, status: "checked-out" });
+        }
+        return { success: true, checkout: response };
+      } catch (err) {
+        setError(err.message || "Failed to checkout book");
+        return { error: err.message || "Failed to checkout book" };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userToken, book]
+  );
+
   const returnBook = useCallback(
     async (bookId) => {
-      if (!isAuthenticated) {
-        setError("You must be logged in to return books");
-        return false;
-      }
-
-      setLoading(true);
-      setError(null);
       try {
-        await bookService.returnBook(bookId);
-        // Update the current book if we're viewing that book
-        if (currentBook && currentBook.id === bookId) {
-          setCurrentBook((prev) => ({ ...prev, status: "available", borrowedByMe: false }));
+        setLoading(true);
+        setError(null);
+        const response = await bookService.returnBook(bookId);
+        // Update the book in the list and detailed view
+        setBooks((prevBooks) => prevBooks.map((book) => (book._id === bookId ? { ...book, status: "available" } : book)));
+        if (book && book._id === bookId) {
+          setBook({ ...book, status: "available" });
         }
-        // Update the borrowed books list
-        setBorrowedBooks((prev) => prev.filter((book) => book.id !== bookId));
-        return true;
+        return { success: true, return: response };
       } catch (err) {
         setError(err.message || "Failed to return book");
-        console.error(err);
-        return false;
+        return { error: err.message || "Failed to return book" };
       } finally {
         setLoading(false);
       }
     },
-    [isAuthenticated, currentBook]
+    [userToken, book]
   );
 
-  // Reserve a book
   const reserveBook = useCallback(
     async (bookId) => {
-      if (!isAuthenticated) {
-        setError("You must be logged in to reserve books");
-        return false;
-      }
-
-      setLoading(true);
-      setError(null);
       try {
-        await bookService.reserveBook(bookId);
-        // Update the current book if we're viewing that book
-        if (currentBook && currentBook.id === bookId) {
-          setCurrentBook((prev) => ({ ...prev, reservedByMe: true }));
+        setLoading(true);
+        setError(null);
+        const response = await bookService.reserveBook(bookId);
+        // Update the book in the list and detailed view
+        setBooks((prevBooks) => prevBooks.map((book) => (book._id === bookId ? { ...book, status: "reserved" } : book)));
+        if (book && book._id === bookId) {
+          setBook({ ...book, status: "reserved" });
         }
-        // Refresh reserved books
-        const reservedData = await bookService.getReservedBooks();
-        setReservedBooks(reservedData.books || []);
-        return true;
+        return { success: true, reservation: response };
       } catch (err) {
         setError(err.message || "Failed to reserve book");
-        console.error(err);
-        return false;
+        return { error: err.message || "Failed to reserve book" };
       } finally {
         setLoading(false);
       }
     },
-    [isAuthenticated, currentBook]
+    [userToken, book]
   );
 
-  // Cancel reservation
   const cancelReservation = useCallback(
     async (bookId) => {
-      if (!isAuthenticated) {
-        setError("You must be logged in to cancel reservations");
-        return false;
-      }
-
-      setLoading(true);
-      setError(null);
       try {
-        await bookService.cancelReservation(bookId);
-        // Update the current book if we're viewing that book
-        if (currentBook && currentBook.id === bookId) {
-          setCurrentBook((prev) => ({ ...prev, reservedByMe: false }));
+        setLoading(true);
+        setError(null);
+        const response = await bookService.cancelReservation(bookId);
+        // Update the book in the list and detailed view
+        setBooks((prevBooks) => prevBooks.map((book) => (book._id === bookId ? { ...book, status: "available" } : book)));
+        if (book && book._id === bookId) {
+          setBook({ ...book, status: "available" });
         }
-        // Update the reserved books list
-        setReservedBooks((prev) => prev.filter((book) => book.id !== bookId));
-        return true;
+        return { success: true };
       } catch (err) {
         setError(err.message || "Failed to cancel reservation");
-        console.error(err);
-        return false;
+        return { error: err.message || "Failed to cancel reservation" };
       } finally {
         setLoading(false);
       }
     },
-    [isAuthenticated, currentBook]
+    [userToken, book]
   );
-
-  // Get user's borrowed books
-  const fetchBorrowedBooks = useCallback(async () => {
-    if (!isAuthenticated) {
-      setBorrowedBooks([]);
-      return [];
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await bookService.getBorrowedBooks();
-      setBorrowedBooks(data.books || []);
-      return data.books || [];
-    } catch (err) {
-      setError("Failed to fetch borrowed books");
-      console.error(err);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated]);
-
-  // Get user's reserved books
-  const fetchReservedBooks = useCallback(async () => {
-    if (!isAuthenticated) {
-      setReservedBooks([]);
-      return [];
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await bookService.getReservedBooks();
-      setReservedBooks(data.books || []);
-      return data.books || [];
-    } catch (err) {
-      setError("Failed to fetch reserved books");
-      console.error(err);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated]);
 
   const value = {
     books,
-    currentBook,
+    book,
     loading,
     error,
     searchResults,
-    borrowedBooks,
-    reservedBooks,
     pagination,
-    fetchBooks,
-    fetchBook,
+    getBooks,
+    getBook,
+    addBook,
+    updateBook,
+    deleteBook,
     searchBooks,
-    borrowBook,
+    checkoutBook,
     returnBook,
     reserveBook,
     cancelReservation,
-    fetchBorrowedBooks,
-    fetchReservedBooks,
   };
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 };
+
+// Add a hook for easier access to book context
+export const useBook = () => React.useContext(BookContext);

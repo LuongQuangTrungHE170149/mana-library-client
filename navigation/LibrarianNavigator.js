@@ -2,19 +2,20 @@ import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialIcons } from "@expo/vector-icons";
-
-// Import librarian screens
-import LibrarianDashboardScreen from "../screens/librarian/LibrarianDashboardScreen";
-import ManageBooksScreen from "../screens/librarian/ManageBooksScreen";
-import BookEntryScreen from "../screens/librarian/BookEntryScreen";
-import BarcodeScannerScreen from "../screens/librarian/BarcodeScannerScreen";
-import CirculationScreen from "../screens/librarian/CirculationScreen";
-import ReservationsScreen from "../screens/librarian/ReservationsScreen";
-import ReportScreen from "../screens/librarian/ReportScreen";
-import MembersScreen from "../screens/librarian/MembersScreen";
+import { safeScreen, importScreen } from "../utils/screenUtils";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
+// Use placeholders for screens that can't be resolved
+const LibrarianDashboardScreen = importScreen("../screens/librarian/LibrarianDashboardScreen", "Librarian Dashboard");
+const ManageBooksScreen = importScreen("../screens/librarian/ManageBooksScreen", "Manage Books");
+const BookEntryScreen = importScreen("../screens/librarian/BookEntryScreen", "Book Entry");
+const BarcodeScannerScreen = importScreen("../screens/librarian/BarcodeScannerScreen", "Barcode Scanner");
+const CirculationScreen = importScreen("../screens/librarian/CirculationScreen", "Circulation");
+const ReservationsScreen = importScreen("../screens/librarian/ReservationsScreen", "Reservations");
+const ReportScreen = importScreen("../screens/librarian/ReportScreen", "Report");
+const MembersScreen = importScreen("../screens/librarian/MembersScreen", "Members");
 
 // Bottom tabs for librarian main sections
 const LibrarianTabNavigator = () => {
@@ -58,7 +59,7 @@ const LibrarianTabNavigator = () => {
     >
       <Tab.Screen
         name="Dashboard"
-        component={LibrarianDashboardScreen}
+        component={safeScreen(LibrarianDashboardScreen, "Librarian Dashboard")}
       />
       <Tab.Screen
         name="Books"
@@ -67,15 +68,15 @@ const LibrarianTabNavigator = () => {
       />
       <Tab.Screen
         name="Circulation"
-        component={CirculationScreen}
+        component={safeScreen(CirculationScreen, "Circulation")}
       />
       <Tab.Screen
         name="Members"
-        component={MembersScreen}
+        component={safeScreen(MembersScreen, "Members")}
       />
       <Tab.Screen
         name="Reports"
-        component={ReportScreen}
+        component={safeScreen(ReportScreen, "Reports")}
       />
     </Tab.Navigator>
   );
@@ -87,19 +88,19 @@ const BooksNavigator = () => {
     <Stack.Navigator>
       <Stack.Screen
         name="ManageBooks"
-        component={ManageBooksScreen}
+        component={safeScreen(ManageBooksScreen, "Manage Books")}
         options={{ title: "Manage Books" }}
       />
       <Stack.Screen
         name="BookEntry"
-        component={BookEntryScreen}
+        component={safeScreen(BookEntryScreen, "Book Entry")}
         options={({ route }) => ({
           title: route.params?.editing ? "Edit Book" : "Add New Book",
         })}
       />
       <Stack.Screen
         name="BarcodeScanner"
-        component={BarcodeScannerScreen}
+        component={safeScreen(BarcodeScannerScreen, "Barcode Scanner")}
         options={{ title: "Scan Book" }}
       />
     </Stack.Navigator>
@@ -116,7 +117,7 @@ const LibrarianNavigator = () => {
       />
       <Stack.Screen
         name="Reservations"
-        component={ReservationsScreen}
+        component={safeScreen(ReservationsScreen, "Reservations")}
         options={{ headerShown: true, title: "Reservations" }}
       />
     </Stack.Navigator>
