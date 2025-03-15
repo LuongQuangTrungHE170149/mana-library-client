@@ -1,246 +1,273 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
-import { bookService } from "../services";
-import { useAuth } from "./AuthContext";
+import React, { createContext, useState, useContext, useCallback } from "react";
+import bookService from "../services/bookService";
+import { AuthContext } from "./AuthContext";
 
-export const BookContext = createContext();
+export const BookContext = createContext(null);
 
 export const BookProvider = ({ children }) => {
+  const { isAuthenticated } = useContext(AuthContext);
+
   const [books, setBooks] = useState([]);
-  const [featuredBooks, setFeaturedBooks] = useState([]);
-  const [recommendedBooks, setRecommendedBooks] = useState([]);
   const [currentBook, setCurrentBook] = useState(null);
-  const [favorites, setFavorites] = useState([]);
-  const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
+  const [borrowedBooks, setBorrowedBooks] = useState([]);
+  const [reservedBooks, setReservedBooks] = useState([]);
   const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    totalPages: 0,
+    currentPage: 1,
+    totalPages: 1,
     totalItems: 0,
+    itemsPerPage: 20,
   });
 
-  const { userToken } = useAuth();
-
-  // Load books with optional filters
-  const loadBooks = useCallback(
-    async (page = 1, limit = 20, filters = {}) => {
-      if (!userToken) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await bookService.getBooks(page, limit, filters);
-        setBooks(response.data);
-        setPagination({
-          page: response.page,
-          limit: response.limit,
-          totalPages: response.totalPages,
-          totalItems: response.totalItems,
-        });
-      } catch (err) {
-        setError("Failed to load books");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [userToken]
-  );
-
-  // Load a specific book
-  const loadBookDetails = async (bookId) => {
+  // Get all books with filtering
+  const fetchBooks = useCallback(async (page = 1, limit = 20, filters = {}) => {
     setLoading(true);
     setError(null);
-
     try {
-      const book = await bookService.getBook(bookId);
-      setCurrentBook(book);
-      return book;
+      const data = await bookService.getBooks(page, limit, filters);
+      setBooks(data.books);
+      setPagination({
+        currentPage: data.currentPage,
+        totalPages: data.totalPages,
+        totalItems: data.totalItems,
+        itemsPerPage: data.itemsPerPage,
+      });
+      return data;
     } catch (err) {
-      setError("Failed to load book details");
+      setError("Failed to fetch books");
       console.error(err);
       return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Search books
-  const searchBooks = async (query, page = 1, limit = 20) => {
+  // Get a specific book
+  const fetchBook = useCallback(async (bookId) => {
     setLoading(true);
     setError(null);
-
     try {
-      const response = await bookService.searchBooks(query, page, limit);
-      return response;
+      const book = await bookService.getBook(bookId);
+      setCurrentBook(book);
+      return book;
+    } catch (err) {
+      setError("Failed to fetch book details");
+      console.error(err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Search for books
+  const searchBooks = useCallback(async (query, page = 1, limit = 20) => {
+    if (!query || query.trim() === "") {
+      setSearchResults([]);
+      return { books: [] };
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await bookService.searchBooks(query, page, limit);
+      setSearchResults(data.books);
+      return data;
     } catch (err) {
       setError("Search failed");
       console.error(err);
-      return { data: [], page: 1, limit, totalPages: 0, totalItems: 0 };
+      return { books: [] };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Borrow a book
-  const borrowBook = async (bookId) => {
-    setLoading(true);
-    setError(null);
+  const borrowBook = useCallback(
+    async (bookId) => {
+      if (!isAuthenticated) {
+        setError("You must be logged in to borrow books");
+        return false;
+      }
 
-    try {
-      await bookService.borrowBook(bookId);
-      // Update borrowed books list
-      const updatedBorrowed = await bookService.getBorrowedBooks();
-      setBorrowedBooks(updatedBorrowed);
-      return true;
-    } catch (err) {
-      setError("Failed to borrow book");
-      console.error(err);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(true);
+      setError(null);
+      try {
+        await bookService.borrowBook(bookId);
+        // Update the current book if we're viewing that book
+        if (currentBook && currentBook.id === bookId) {
+          setCurrentBook((prev) => ({ ...prev, status: "borrowed", borrowedByMe: true }));
+        }
+        // Refresh borrowed books
+        const borrowedData = await bookService.getBorrowedBooks();
+        setBorrowedBooks(borrowedData.books || []);
+        return true;
+      } catch (err) {
+        setError(err.message || "Failed to borrow book");
+        console.error(err);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isAuthenticated, currentBook]
+  );
 
   // Return a book
-  const returnBook = async (bookId) => {
-    setLoading(true);
-    setError(null);
+  const returnBook = useCallback(
+    async (bookId) => {
+      if (!isAuthenticated) {
+        setError("You must be logged in to return books");
+        return false;
+      }
 
-    try {
-      await bookService.returnBook(bookId);
-      // Update borrowed books list
-      const updatedBorrowed = await bookService.getBorrowedBooks();
-      setBorrowedBooks(updatedBorrowed);
-      return true;
-    } catch (err) {
-      setError("Failed to return book");
-      console.error(err);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Toggle favorite status
-  const toggleFavorite = async (bookId) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const isFavorite = favorites.some((book) => book.id === bookId);
-
-      if (isFavorite) {
-        await bookService.removeFavorite(bookId);
-        setFavorites(favorites.filter((book) => book.id !== bookId));
-      } else {
-        await bookService.addFavorite(bookId);
+      setLoading(true);
+      setError(null);
+      try {
+        await bookService.returnBook(bookId);
+        // Update the current book if we're viewing that book
         if (currentBook && currentBook.id === bookId) {
-          setFavorites([...favorites, currentBook]);
-        } else {
-          // Fetch updated favorites
-          const updatedFavorites = await bookService.getFavorites();
-          setFavorites(updatedFavorites);
+          setCurrentBook((prev) => ({ ...prev, status: "available", borrowedByMe: false }));
         }
+        // Update the borrowed books list
+        setBorrowedBooks((prev) => prev.filter((book) => book.id !== bookId));
+        return true;
+      } catch (err) {
+        setError(err.message || "Failed to return book");
+        console.error(err);
+        return false;
+      } finally {
+        setLoading(false);
       }
-      return true;
+    },
+    [isAuthenticated, currentBook]
+  );
+
+  // Reserve a book
+  const reserveBook = useCallback(
+    async (bookId) => {
+      if (!isAuthenticated) {
+        setError("You must be logged in to reserve books");
+        return false;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        await bookService.reserveBook(bookId);
+        // Update the current book if we're viewing that book
+        if (currentBook && currentBook.id === bookId) {
+          setCurrentBook((prev) => ({ ...prev, reservedByMe: true }));
+        }
+        // Refresh reserved books
+        const reservedData = await bookService.getReservedBooks();
+        setReservedBooks(reservedData.books || []);
+        return true;
+      } catch (err) {
+        setError(err.message || "Failed to reserve book");
+        console.error(err);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isAuthenticated, currentBook]
+  );
+
+  // Cancel reservation
+  const cancelReservation = useCallback(
+    async (bookId) => {
+      if (!isAuthenticated) {
+        setError("You must be logged in to cancel reservations");
+        return false;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        await bookService.cancelReservation(bookId);
+        // Update the current book if we're viewing that book
+        if (currentBook && currentBook.id === bookId) {
+          setCurrentBook((prev) => ({ ...prev, reservedByMe: false }));
+        }
+        // Update the reserved books list
+        setReservedBooks((prev) => prev.filter((book) => book.id !== bookId));
+        return true;
+      } catch (err) {
+        setError(err.message || "Failed to cancel reservation");
+        console.error(err);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isAuthenticated, currentBook]
+  );
+
+  // Get user's borrowed books
+  const fetchBorrowedBooks = useCallback(async () => {
+    if (!isAuthenticated) {
+      setBorrowedBooks([]);
+      return [];
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await bookService.getBorrowedBooks();
+      setBorrowedBooks(data.books || []);
+      return data.books || [];
     } catch (err) {
-      setError("Failed to update favorites");
+      setError("Failed to fetch borrowed books");
       console.error(err);
-      return false;
+      return [];
     } finally {
       setLoading(false);
     }
+  }, [isAuthenticated]);
+
+  // Get user's reserved books
+  const fetchReservedBooks = useCallback(async () => {
+    if (!isAuthenticated) {
+      setReservedBooks([]);
+      return [];
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await bookService.getReservedBooks();
+      setReservedBooks(data.books || []);
+      return data.books || [];
+    } catch (err) {
+      setError("Failed to fetch reserved books");
+      console.error(err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  const value = {
+    books,
+    currentBook,
+    loading,
+    error,
+    searchResults,
+    borrowedBooks,
+    reservedBooks,
+    pagination,
+    fetchBooks,
+    fetchBook,
+    searchBooks,
+    borrowBook,
+    returnBook,
+    reserveBook,
+    cancelReservation,
+    fetchBorrowedBooks,
+    fetchReservedBooks,
   };
 
-  // Load user's favorites when authenticated
-  useEffect(() => {
-    if (userToken) {
-      const loadUserFavorites = async () => {
-        setLoading(true);
-        try {
-          const favorites = await bookService.getFavorites();
-          setFavorites(favorites);
-        } catch (err) {
-          console.error("Failed to load favorites:", err);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      const loadUserBorrowed = async () => {
-        setLoading(true);
-        try {
-          const borrowed = await bookService.getBorrowedBooks();
-          setBorrowedBooks(borrowed);
-        } catch (err) {
-          console.error("Failed to load borrowed books:", err);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      loadUserFavorites();
-      loadUserBorrowed();
-      loadBooks();
-    }
-  }, [userToken, loadBooks]);
-
-  // Load featured and recommended books
-  useEffect(() => {
-    const loadFeaturedBooks = async () => {
-      try {
-        const response = await bookService.getBooks(1, 5, { featured: true });
-        setFeaturedBooks(response.data);
-      } catch (err) {
-        console.error("Failed to load featured books:", err);
-      }
-    };
-
-    const loadRecommendedBooks = async () => {
-      if (!userToken) return;
-
-      try {
-        const recommended = await bookService.getRecommendations();
-        setRecommendedBooks(recommended);
-      } catch (err) {
-        console.error("Failed to load recommendations:", err);
-      }
-    };
-
-    loadFeaturedBooks();
-    if (userToken) {
-      loadRecommendedBooks();
-    }
-  }, [userToken]);
-
-  return (
-    <BookContext.Provider
-      value={{
-        books,
-        featuredBooks,
-        recommendedBooks,
-        currentBook,
-        favorites,
-        borrowedBooks,
-        loading,
-        error,
-        pagination,
-        loadBooks,
-        loadBookDetails,
-        searchBooks,
-        borrowBook,
-        returnBook,
-        toggleFavorite,
-      }}
-    >
-      {children}
-    </BookContext.Provider>
-  );
+  return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 };
-
-export const useBooks = () => useContext(BookContext);
-
-export default BookProvider;

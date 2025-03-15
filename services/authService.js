@@ -1,22 +1,31 @@
 import api from "./api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const authService = {
-  // Login with email and password
+  // ===== AUTHENTICATION =====
+
+  // User login with credentials
   login: async (email, password) => {
     try {
-      const response = await api.post("/api/v1/auth/login", { email, password });
+      const response = await api.post("/api/v1/auth/login", {
+        email,
+        password,
+      });
+
+      // If login successful, store tokens
       if (response.data.token) {
-        await AsyncStorage.setItem("userToken", response.data.token);
-        await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
+        localStorage.setItem("token", response.data.token);
+        if (response.data.refreshToken) {
+          localStorage.setItem("refreshToken", response.data.refreshToken);
+        }
       }
+
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
     }
   },
 
-  // Register new user account
+  // Create new user account
   register: async (userData) => {
     try {
       const response = await api.post("/api/v1/auth/register", userData);
@@ -26,8 +35,56 @@ const authService = {
     }
   },
 
+  // Logout (client-side)
+  logout: () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    // Force reload to clear any in-memory state
+    // window.location.href = '/login';
+  },
+
+  // Refresh JWT token
+  refreshToken: async () => {
+    try {
+      const refreshToken = localStorage.getItem("refreshToken");
+
+      if (!refreshToken) {
+        throw new Error("No refresh token available");
+      }
+
+      const response = await api.post("/api/v1/auth/refresh", {
+        refreshToken,
+      });
+
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        if (response.data.refreshToken) {
+          localStorage.setItem("refreshToken", response.data.refreshToken);
+        }
+      }
+
+      return response.data;
+    } catch (error) {
+      // If refresh fails, logout
+      authService.logout();
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Check if user is authenticated (client-side)
+  isAuthenticated: () => {
+    return !!localStorage.getItem("token");
+  },
+
+  // Get current token (client-side)
+  getToken: () => {
+    return localStorage.getItem("token");
+  },
+
+  // ===== PASSWORD MANAGEMENT =====
+
   // Request password reset
-  requestReset: async (email) => {
+  requestPasswordReset: async (email) => {
     try {
       const response = await api.post("/api/v1/auth/reset", { email });
       return response.data;
@@ -36,10 +93,29 @@ const authService = {
     }
   },
 
-  // Verify account or reset code
-  verifyCode: async (code, email) => {
+  // Complete password reset with code and new password
+  completePasswordReset: async (email, code, newPassword) => {
     try {
-      const response = await api.post("/api/v1/auth/verify", { code, email });
+      const response = await api.post("/api/v1/auth/reset", {
+        email,
+        code,
+        newPassword,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // ===== ACCOUNT VERIFICATION =====
+
+  // Verify account with code
+  verifyAccount: async (email, code) => {
+    try {
+      const response = await api.post("/api/v1/auth/verify", {
+        email,
+        code,
+      });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
@@ -56,8 +132,10 @@ const authService = {
     }
   },
 
-  // Get 2FA setup (returns QR code)
-  setup2FA: async () => {
+  // ===== TWO-FACTOR AUTHENTICATION =====
+
+  // Get 2FA setup QR code
+  get2FASetup: async () => {
     try {
       const response = await api.get("/api/v1/auth/2fa");
       return response.data;
@@ -66,71 +144,43 @@ const authService = {
     }
   },
 
-  // Toggle 2FA status
-  toggle2FA: async (enabled, code) => {
+  // Enable/disable 2FA
+  toggle2FA: async (enable, code = null) => {
     try {
-      const response = await api.put("/api/v1/auth/2fa", { enabled, code });
+      const payload = { enabled: enable };
+
+      // If enabling 2FA, provide verification code
+      if (enable && code) {
+        payload.code = code;
+      }
+
+      const response = await api.put("/api/v1/auth/2fa", payload);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
     }
   },
 
-  // Login with 2FA
-  login2FA: async (email, password, code) => {
+  // Verify 2FA code during login
+  verify2FALogin: async (email, code) => {
     try {
       const response = await api.post("/api/v1/auth/login", {
         email,
-        password,
-        code,
+        twoFactorCode: code,
       });
+
+      // If verification successful, store token
       if (response.data.token) {
-        await AsyncStorage.setItem("userToken", response.data.token);
-        await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
+        localStorage.setItem("token", response.data.token);
+        if (response.data.refreshToken) {
+          localStorage.setItem("refreshToken", response.data.refreshToken);
+        }
       }
+
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
     }
-  },
-
-  // Logout and clear storage
-  logout: async () => {
-    try {
-      // Clear local storage
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userData");
-      return true;
-    } catch (error) {
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userData");
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // Refresh token
-  refreshToken: async () => {
-    try {
-      const response = await api.post("/api/v1/auth/refresh");
-      if (response.data.token) {
-        await AsyncStorage.setItem("userToken", response.data.token);
-      }
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // Get current authentication status
-  isAuthenticated: async () => {
-    const token = await AsyncStorage.getItem("userToken");
-    return !!token;
-  },
-
-  // Get current user data
-  getCurrentUser: async () => {
-    const userData = await AsyncStorage.getItem("userData");
-    return userData ? JSON.parse(userData) : null;
   },
 };
 

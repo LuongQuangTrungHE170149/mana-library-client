@@ -1,64 +1,79 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { authService } from "../services";
+import React, { createContext, useState, useEffect, useCallback } from "react";
+import authService from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
-// Create context
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [userToken, setUserToken] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  // Check if user is already logged in
+  const navigate = useNavigate();
+
+  // Check authentication status on mount
   useEffect(() => {
-    const bootstrapAsync = async () => {
-      setLoading(true);
-      try {
-        // Retrieve stored data
-        const token = await AsyncStorage.getItem("userToken");
-        const userDataString = await AsyncStorage.getItem("userData");
-
-        if (token && userDataString) {
-          const parsedUserData = JSON.parse(userDataString);
-          setUserToken(token);
-          setUserData(parsedUserData);
-          setUserRole(parsedUserData.role || "user");
+    const checkAuth = async () => {
+      if (authService.isAuthenticated()) {
+        try {
+          // Fetch user profile or verify token validity
+          // This depends on your backend implementation
+          setIsAuthenticated(true);
+        } catch (err) {
+          console.error("Token validation failed:", err);
+          authService.logout();
+          setIsAuthenticated(false);
         }
-      } catch (e) {
-        console.error("Failed to load auth state:", e);
-      } finally {
-        setLoading(false);
+      } else {
+        setIsAuthenticated(false);
       }
+      setLoading(false);
     };
 
-    bootstrapAsync();
+    checkAuth();
   }, []);
 
   // Login function
   const login = async (email, password) => {
     setLoading(true);
     setError(null);
-
     try {
-      const response = await authService.login(email, password);
+      const data = await authService.login(email, password);
 
-      // Store the token and user data
-      await AsyncStorage.setItem("userToken", response.token);
-      await AsyncStorage.setItem("userData", JSON.stringify(response.user));
+      // Handle 2FA challenge
+      if (data.requireTwoFactor) {
+        setVerificationEmail(email);
+        setIsVerifying(true);
+        return { requireTwoFactor: true };
+      }
 
-      // Update state
-      setUserToken(response.token);
-      setUserData(response.user);
-      setUserRole(response.user.role || "user");
-
+      setUser(data.user);
+      setIsAuthenticated(true);
       return { success: true };
     } catch (err) {
-      setError(err.message || "Failed to login");
-      console.error("Login error:", err);
-      return { success: false, error: err.message || "Failed to login" };
+      setError(err.message || "Login failed");
+      return { error: err.message || "Login failed" };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify 2FA code during login
+  const verify2FA = async (code) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await authService.verify2FALogin(verificationEmail, code);
+      setUser(data.user);
+      setIsAuthenticated(true);
+      setIsVerifying(false);
+      return { success: true };
+    } catch (err) {
+      setError(err.message || "Verification failed");
+      return { error: err.message || "Verification failed" };
     } finally {
       setLoading(false);
     }
@@ -68,204 +83,142 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     setLoading(true);
     setError(null);
-
     try {
-      await authService.register(userData);
-      return { success: true };
+      const data = await authService.register(userData);
+      setVerificationEmail(userData.email);
+      return { success: true, requireVerification: data.requireVerification };
     } catch (err) {
-      setError(err.message || "Failed to register");
-      console.error("Registration error:", err);
-      return { success: false, error: err.message || "Failed to register" };
+      setError(err.message || "Registration failed");
+      return { error: err.message || "Registration failed" };
     } finally {
       setLoading(false);
     }
   };
 
-  // Forgot password function
-  const forgotPassword = async (email) => {
+  // Verify account with code
+  const verifyAccount = async (code) => {
     setLoading(true);
     setError(null);
-
     try {
-      await authService.requestReset(email);
+      await authService.verifyAccount(verificationEmail, code);
       return { success: true };
     } catch (err) {
-      setError(err.message || "Failed to process request");
-      console.error("Forgot password error:", err);
-      return { success: false, error: err.message || "Failed to process request" };
+      setError(err.message || "Verification failed");
+      return { error: err.message || "Verification failed" };
     } finally {
       setLoading(false);
     }
   };
 
-  // Reset password with verification code
-  const resetPassword = async (token, newPassword) => {
+  // Resend verification code
+  const resendVerificationCode = async () => {
+    if (!verificationEmail) return { error: "No email to send verification code" };
+
     setLoading(true);
     setError(null);
-
     try {
-      await authService.completeReset(token, newPassword);
+      await authService.sendVerificationCode(verificationEmail);
       return { success: true };
     } catch (err) {
-      setError(err.message || "Failed to reset password");
-      console.error("Reset password error:", err);
-      return { success: false, error: err.message || "Failed to reset password" };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Verify reset code
-  const verifyResetToken = async (token) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await authService.verifyResetToken(token);
-      return { success: true };
-    } catch (err) {
-      setError(err.message || "Invalid or expired code");
-      console.error("Verify code error:", err);
-      return { success: false, error: err.message || "Invalid or expired code" };
+      setError(err.message || "Failed to send verification code");
+      return { error: err.message || "Failed to send verification code" };
     } finally {
       setLoading(false);
     }
   };
 
   // Logout function
-  const logout = async () => {
-    setLoading(true);
-    try {
-      // Clear storage
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userData");
+  const logout = useCallback(() => {
+    authService.logout();
+    setUser(null);
+    setIsAuthenticated(false);
+    navigate("/login");
+  }, [navigate]);
 
-      // Clear state
-      setUserToken(null);
-      setUserData(null);
-      setUserRole(null);
-
-      // Optionally notify server about logout
-      try {
-        await authService.logout();
-      } catch (e) {
-        // Ignore server-side logout errors
-        console.warn("Server logout failed, but local logout successful");
-      }
-    } catch (e) {
-      console.error("Logout error:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // OAuth login
-  const oauthLogin = async (provider, token) => {
+  // Password reset request
+  const requestPasswordReset = async (email) => {
     setLoading(true);
     setError(null);
-
     try {
-      const response = await authService.oauthLogin(provider, token);
-
-      // Store the token and user data
-      await AsyncStorage.setItem("userToken", response.token);
-      await AsyncStorage.setItem("userData", JSON.stringify(response.user));
-
-      // Update state
-      setUserToken(response.token);
-      setUserData(response.user);
-      setUserRole(response.user.role || "user");
-
+      await authService.requestPasswordReset(email);
+      setVerificationEmail(email);
       return { success: true };
     } catch (err) {
-      setError(err.message || "OAuth login failed");
-      console.error("OAuth login error:", err);
-      return { success: false, error: err.message || "OAuth login failed" };
+      setError(err.message || "Failed to request password reset");
+      return { error: err.message || "Failed to request password reset" };
     } finally {
       setLoading(false);
     }
   };
 
-  // Update user profile in auth context
-  const updateUserData = async (updatedData) => {
-    try {
-      // Merge with existing user data
-      const newUserData = { ...userData, ...updatedData };
-      await AsyncStorage.setItem("userData", JSON.stringify(newUserData));
-      setUserData(newUserData);
-
-      // Update role if it changed
-      if (updatedData.role && updatedData.role !== userRole) {
-        setUserRole(updatedData.role);
-      }
-
-      return true;
-    } catch (err) {
-      console.error("Update user data error:", err);
-      return false;
-    }
-  };
-
-  // Admin login
-  const adminLogin = async (email, password) => {
+  // Complete password reset
+  const completePasswordReset = async (code, newPassword) => {
     setLoading(true);
     setError(null);
-
     try {
-      // This could be a separate endpoint or may use the same login endpoint but validate role
-      const response = await authService.login(email, password);
-
-      if (response.user.role !== "admin" && response.user.role !== "librarian") {
-        throw new Error("Unauthorized access. Not an admin or librarian account.");
-      }
-
-      // Store the token and user data
-      await AsyncStorage.setItem("userToken", response.token);
-      await AsyncStorage.setItem("userData", JSON.stringify(response.user));
-
-      // Update state
-      setUserToken(response.token);
-      setUserData(response.user);
-      setUserRole(response.user.role);
-
+      await authService.completePasswordReset(verificationEmail, code, newPassword);
       return { success: true };
     } catch (err) {
-      setError(err.message || "Admin login failed");
-      console.error("Admin login error:", err);
-      return { success: false, error: err.message || "Admin login failed" };
+      setError(err.message || "Failed to reset password");
+      return { error: err.message || "Failed to reset password" };
     } finally {
       setLoading(false);
     }
   };
 
-  // Provide the authentication context value
-  const authContext = {
-    // State
-    userToken,
-    userData,
-    userRole,
+  // Get 2FA setup QR code
+  const get2FASetup = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await authService.get2FASetup();
+      return { success: true, data };
+    } catch (err) {
+      setError(err.message || "Failed to get 2FA setup");
+      return { error: err.message || "Failed to get 2FA setup" };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Enable/disable 2FA
+  const toggle2FA = async (enable, code = null) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await authService.toggle2FA(enable, code);
+      // Update user object to reflect 2FA status
+      setUser((prev) => ({
+        ...prev,
+        twoFactorEnabled: enable,
+      }));
+      return { success: true };
+    } catch (err) {
+      setError(err.message || `Failed to ${enable ? "enable" : "disable"} 2FA`);
+      return { error: err.message || `Failed to ${enable ? "enable" : "disable"} 2FA` };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const value = {
+    user,
     loading,
     error,
-    isLoggedIn: !!userToken,
-    isAdmin: userRole === "admin",
-    isLibrarian: userRole === "librarian",
-
-    // Methods
+    isAuthenticated,
+    verificationEmail,
+    isVerifying,
     login,
     register,
     logout,
-    forgotPassword,
-    resetPassword,
-    verifyResetToken,
-    oauthLogin,
-    updateUserData,
-    adminLogin,
+    verify2FA,
+    verifyAccount,
+    resendVerificationCode,
+    requestPasswordReset,
+    completePasswordReset,
+    get2FASetup,
+    toggle2FA,
   };
 
-  return <AuthContext.Provider value={authContext}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-// Custom hook to use the auth context
-export const useAuth = () => useContext(AuthContext);
-
-export default AuthProvider;

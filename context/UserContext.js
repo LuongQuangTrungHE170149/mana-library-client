@@ -1,49 +1,80 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
-import { userService } from "../services";
-import { useAuth } from "./AuthContext";
+import React, { createContext, useState, useEffect, useContext } from "react";
+import userService from "../services/userService";
+import { AuthContext } from "./AuthContext";
 
-export const UserContext = createContext();
+export const UserContext = createContext(null);
 
 export const UserProvider = ({ children }) => {
-  const [profile, setProfile] = useState(null);
-  const [borrowHistory, setBorrowHistory] = useState([]);
-  const [returnHistory, setReturnHistory] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const { isAuthenticated, user: authUser } = useContext(AuthContext);
+
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [favorites, setFavorites] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
-  const { userToken, userRole } = useAuth();
+  // Load user profile when authenticated
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!isAuthenticated) {
+        setUser(null);
+        return;
+      }
 
-  // Load user profile
-  const loadUserProfile = useCallback(async () => {
-    if (!userToken) return;
+      setLoading(true);
+      try {
+        const userData = await userService.getProfile();
+        setUser(userData);
 
-    setLoading(true);
-    setError(null);
+        // Load favorites
+        const favoritesData = await userService.getFavorites();
+        setFavorites(favoritesData.favorites || []);
 
-    try {
-      const userProfile = await userService.getProfile();
-      setProfile(userProfile);
-    } catch (err) {
-      setError("Failed to load user profile");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userToken]);
+        // Load notifications
+        const notificationsData = await userService.getNotifications();
+        setNotifications(notificationsData.notifications || []);
+        setUnreadNotifications(notificationsData.notifications.filter((n) => !n.isRead).length);
+      } catch (err) {
+        setError("Failed to load user data");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [isAuthenticated, authUser]);
 
   // Update user profile
   const updateProfile = async (userData) => {
     setLoading(true);
     setError(null);
-
     try {
-      const updatedProfile = await userService.updateProfile(userData);
-      setProfile(updatedProfile);
-      return true;
+      const updatedUser = await userService.updateProfile(userData);
+      setUser(updatedUser);
+      return { success: true };
     } catch (err) {
       setError("Failed to update profile");
+      console.error(err);
+      return { error: err.message || "Failed to update profile" };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add book to favorites
+  const addToFavorites = async (bookId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await userService.addFavorite(bookId);
+      // Refresh favorites list
+      const favoritesData = await userService.getFavorites();
+      setFavorites(favoritesData.favorites || []);
+      return true;
+    } catch (err) {
+      setError("Failed to add to favorites");
       console.error(err);
       return false;
     } finally {
@@ -51,43 +82,37 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Load user history
-  const loadUserHistory = useCallback(async () => {
-    if (!userToken) return;
-
+  // Remove book from favorites
+  const removeFromFavorites = async (bookId) => {
     setLoading(true);
-
+    setError(null);
     try {
-      const [borrowed, returned] = await Promise.all([userService.getBorrowedBooks(), userService.getReturnHistory()]);
-
-      setBorrowHistory(borrowed);
-      setReturnHistory(returned);
+      await userService.removeFavorite(bookId);
+      // Update local state without another API call
+      setFavorites(favorites.filter((book) => book.id !== bookId));
+      return true;
     } catch (err) {
-      console.error("Failed to load history:", err);
+      setError("Failed to remove from favorites");
+      console.error(err);
+      return false;
     } finally {
       setLoading(false);
     }
-  }, [userToken]);
+  };
 
-  // Load notifications
-  const loadNotifications = useCallback(async () => {
-    if (!userToken) return;
-
-    try {
-      const allNotifications = await userService.getNotifications();
-      setNotifications(allNotifications);
-      setUnreadNotifications(allNotifications.filter((notification) => !notification.isRead).length);
-    } catch (err) {
-      console.error("Failed to load notifications:", err);
-    }
-  }, [userToken]);
+  // Check if a book is in favorites
+  const isBookFavorited = (bookId) => {
+    return favorites.some((book) => book.id === bookId);
+  };
 
   // Mark notification as read
   const markNotificationRead = async (notificationId) => {
     try {
       await userService.markNotificationRead(notificationId);
-      setNotifications(notifications.map((notification) => (notification.id === notificationId ? { ...notification, isRead: true } : notification)));
-      setUnreadNotifications(unreadNotifications - 1);
+      // Update local state
+      const updatedNotifications = notifications.map((notification) => (notification.id === notificationId ? { ...notification, isRead: true } : notification));
+      setNotifications(updatedNotifications);
+      setUnreadNotifications((prev) => Math.max(0, prev - 1));
       return true;
     } catch (err) {
       console.error("Failed to mark notification as read:", err);
@@ -95,60 +120,51 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Change password
-  const changePassword = async (currentPassword, newPassword) => {
-    setLoading(true);
-    setError(null);
-
+  // Mark all notifications as read
+  const markAllNotificationsRead = async () => {
     try {
-      await userService.changePassword(currentPassword, newPassword);
+      await userService.markAllNotificationsRead();
+      const updatedNotifications = notifications.map((notification) => ({
+        ...notification,
+        isRead: true,
+      }));
+      setNotifications(updatedNotifications);
+      setUnreadNotifications(0);
       return true;
     } catch (err) {
-      setError(err.message || "Failed to change password");
-      console.error(err);
+      console.error("Failed to mark all notifications as read:", err);
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Load initial data when authenticated
-  useEffect(() => {
-    if (userToken) {
-      loadUserProfile();
-      loadUserHistory();
-      loadNotifications();
-    } else {
-      setProfile(null);
-      setBorrowHistory([]);
-      setReturnHistory([]);
-      setNotifications([]);
+  // Refresh notifications
+  const refreshNotifications = async () => {
+    try {
+      const notificationsData = await userService.getNotifications();
+      setNotifications(notificationsData.notifications || []);
+      setUnreadNotifications(notificationsData.notifications.filter((n) => !n.isRead).length);
+      return true;
+    } catch (err) {
+      console.error("Failed to refresh notifications:", err);
+      return false;
     }
-  }, [userToken, loadUserProfile, loadUserHistory, loadNotifications]);
+  };
 
-  return (
-    <UserContext.Provider
-      value={{
-        profile,
-        borrowHistory,
-        returnHistory,
-        notifications,
-        unreadNotifications,
-        loading,
-        error,
-        updateProfile,
-        loadUserProfile,
-        loadUserHistory,
-        loadNotifications,
-        markNotificationRead,
-        changePassword,
-      }}
-    >
-      {children}
-    </UserContext.Provider>
-  );
+  const value = {
+    user,
+    loading,
+    error,
+    favorites,
+    notifications,
+    unreadNotifications,
+    updateProfile,
+    addToFavorites,
+    removeFromFavorites,
+    isBookFavorited,
+    markNotificationRead,
+    markAllNotificationsRead,
+    refreshNotifications,
+  };
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
-
-export const useUser = () => useContext(UserContext);
-
-export default UserProvider;

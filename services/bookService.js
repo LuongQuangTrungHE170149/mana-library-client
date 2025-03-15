@@ -1,137 +1,205 @@
 import api from "./api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const authService = {
-  // Login with email and password
-  login: async (email, password) => {
-    try {
-      const response = await api.post("/api/v1/auth/login", { email, password });
-      if (response.data.token) {
-        await AsyncStorage.setItem("userToken", response.data.token);
-        await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
-      }
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
+const bookService = {
+  // ===== BOOK RETRIEVAL =====
 
-  // Register new user account
-  register: async (userData) => {
+  // Get all books with filtering options
+  getBooks: async (page = 1, limit = 20, filters = {}) => {
     try {
-      const response = await api.post("/api/v1/auth/register", userData);
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // Request password reset
-  requestReset: async (email) => {
-    try {
-      const response = await api.post("/api/v1/auth/reset", { email });
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // Verify account or reset code
-  verifyCode: async (code, email) => {
-    try {
-      const response = await api.post("/api/v1/auth/verify", { code, email });
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // Send verification code
-  sendVerificationCode: async (email) => {
-    try {
-      const response = await api.post("/api/v1/auth/send-code", { email });
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // Get 2FA setup (returns QR code)
-  setup2FA: async () => {
-    try {
-      const response = await api.get("/api/v1/auth/2fa");
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // Toggle 2FA status
-  toggle2FA: async (enabled, code) => {
-    try {
-      const response = await api.put("/api/v1/auth/2fa", { enabled, code });
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // Login with 2FA
-  login2FA: async (email, password, code) => {
-    try {
-      const response = await api.post("/api/v1/auth/login", {
-        email,
-        password,
-        code,
+      const response = await api.get("/api/v1/books", {
+        params: { page, limit, ...filters },
       });
-      if (response.data.token) {
-        await AsyncStorage.setItem("userToken", response.data.token);
-        await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
-      }
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
     }
   },
 
-  // Logout and clear storage
-  logout: async () => {
+  // Get specific book details
+  getBook: async (bookId) => {
     try {
-      // Clear local storage
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userData");
-      return true;
-    } catch (error) {
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userData");
-      throw error.response ? error.response.data : new Error("Network error");
-    }
-  },
-
-  // Refresh token
-  refreshToken: async () => {
-    try {
-      const response = await api.post("/api/v1/auth/refresh");
-      if (response.data.token) {
-        await AsyncStorage.setItem("userToken", response.data.token);
-      }
+      const response = await api.get(`/api/v1/books/${bookId}`);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error("Network error");
     }
   },
 
-  // Get current authentication status
-  isAuthenticated: async () => {
-    const token = await AsyncStorage.getItem("userToken");
-    return !!token;
+  // Search for books
+  searchBooks: async (query, page = 1, limit = 20) => {
+    try {
+      const response = await api.get("/api/v1/books/search", {
+        params: { query, page, limit },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
   },
 
-  // Get current user data
-  getCurrentUser: async () => {
-    const userData = await AsyncStorage.getItem("userData");
-    return userData ? JSON.parse(userData) : null;
+  // ===== BOOK MANAGEMENT (ADMIN/LIBRARIAN) =====
+
+  // Create a new book (admin/librarian)
+  addBook: async (bookData) => {
+    try {
+      const response = await api.post("/api/v1/books", bookData);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Update a book (admin/librarian)
+  updateBook: async (bookId, bookData) => {
+    try {
+      const response = await api.patch(`/api/v1/books/${bookId}`, bookData);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Delete a book (admin/librarian)
+  deleteBook: async (bookId) => {
+    try {
+      const response = await api.delete(`/api/v1/books/${bookId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // ===== BOOK ACTIONS =====
+
+  // Borrow a book
+  borrowBook: async (bookId, userId = null) => {
+    try {
+      // If userId is provided, it's an admin borrowing on behalf of a user
+      const payload = userId ? { userId } : {};
+      const response = await api.post(`/api/v1/books/${bookId}/borrow`, payload);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Return a book
+  returnBook: async (bookId, userId = null, condition = null) => {
+    try {
+      // If userId is provided, it's an admin returning on behalf of a user
+      const payload = {};
+      if (userId) payload.userId = userId;
+      if (condition) payload.condition = condition;
+
+      const response = await api.post(`/api/v1/books/${bookId}/return`, payload);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Reserve a book
+  reserveBook: async (bookId) => {
+    try {
+      const response = await api.post(`/api/v1/books/${bookId}/reserve`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Cancel reservation
+  cancelReservation: async (bookId) => {
+    try {
+      const response = await api.post(`/api/v1/books/${bookId}/cancel-reservation`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // ===== USER BOOK COLLECTIONS =====
+
+  // Get current user's borrowed books
+  getBorrowedBooks: async () => {
+    try {
+      const response = await api.get("/api/v1/books/borrowed");
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Get current user's reserved books
+  getReservedBooks: async () => {
+    try {
+      const response = await api.get("/api/v1/books/reserved");
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // ===== ADMIN/LIBRARIAN USER BOOK MANAGEMENT =====
+
+  // Get books borrowed by specific user (admin/librarian)
+  getBorrowedBooksByUser: async (userId) => {
+    try {
+      const response = await api.get(`/api/v1/books/borrowed/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Get books reserved by specific user (admin/librarian)
+  getReservedBooksByUser: async (userId) => {
+    try {
+      const response = await api.get(`/api/v1/books/reserved/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // ===== ADMIN TOOLS =====
+
+  // Get borrowing statistics (admin)
+  getBookStats: async () => {
+    try {
+      const response = await api.get("/api/v1/books/stats");
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Import books from file (admin)
+  importBooks: async (fileData) => {
+    try {
+      const formData = new FormData();
+      formData.append("booksFile", fileData);
+
+      const response = await api.post("/api/v1/books/import", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
+  },
+
+  // Export books catalog (admin)
+  exportBooks: async () => {
+    try {
+      const response = await api.get("/api/v1/books/export", {
+        responseType: "blob",
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error("Network error");
+    }
   },
 };
 
-export default authService;
+export default bookService;

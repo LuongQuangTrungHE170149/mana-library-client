@@ -1,102 +1,46 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
-import { userService, bookService } from "../services";
-import { useAuth } from "./AuthContext";
+import React, { createContext, useState, useContext, useEffect } from "react";
+import bookService from "../services/bookService";
+import userService from "../services/userService";
+import { AuthContext } from "./AuthContext";
 
-export const AdminContext = createContext();
+export const AdminContext = createContext(null);
 
 export const AdminProvider = ({ children }) => {
-  const [allUsers, setAllUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [systemMetrics, setSystemMetrics] = useState(null);
-  const [bookStats, setBookStats] = useState(null);
+  const { user, isAuthenticated } = useContext(AuthContext);
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLibrarian, setIsLibrarian] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [usersPagination, setUsersPagination] = useState({
-    page: 1,
-    limit: 20,
-    totalPages: 0,
-    totalItems: 0,
-  });
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [userBooksBorrowed, setUserBooksBorrowed] = useState([]);
+  const [userBooksReserved, setUserBooksReserved] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
-  const { userToken, userRole } = useAuth();
-  const isAdmin = userRole === "admin";
-
-  // Load system metrics (admin only)
-  const loadSystemMetrics = useCallback(async () => {
-    if (!userToken || !isAdmin) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const metrics = await userService.getSystemMetrics();
-      setSystemMetrics(metrics);
-    } catch (err) {
-      setError("Failed to load system metrics");
-      console.error(err);
-    } finally {
-      setLoading(false);
+  // Check admin/librarian status when user changes
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      setIsAdmin(user.role === "admin");
+      setIsLibrarian(user.role === "librarian" || user.role === "admin");
+    } else {
+      setIsAdmin(false);
+      setIsLibrarian(false);
     }
-  }, [userToken, isAdmin]);
+  }, [user, isAuthenticated]);
 
-  // Load book statistics (admin only)
-  const loadBookStats = useCallback(async () => {
-    if (!userToken || !isAdmin) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const stats = await bookService.getBookMetrics();
-      setBookStats(stats);
-    } catch (err) {
-      setError("Failed to load book statistics");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userToken, isAdmin]);
-
-  // Load all users with pagination (admin only)
-  const loadUsers = useCallback(
-    async (page = 1, limit = 20) => {
-      if (!userToken || !isAdmin) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await userService.getAllUsers(page, limit);
-        setAllUsers(response.data);
-        setUsersPagination({
-          page: response.page,
-          limit: response.limit,
-          totalPages: response.totalPages,
-          totalItems: response.totalItems,
-        });
-      } catch (err) {
-        setError("Failed to load users");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [userToken, isAdmin]
-  );
-
-  // Load user details (admin only)
-  const loadUserDetails = async (userId) => {
-    if (!userToken || !isAdmin) return;
+  // Fetch all users (admin/librarian only)
+  const fetchUsers = async (page = 1, limit = 20, filters = {}) => {
+    if (!isAuthenticated || !isLibrarian) return null;
 
     setLoading(true);
     setError(null);
-
     try {
-      const user = await userService.getUserById(userId);
-      setSelectedUser(user);
-      return user;
+      const data = await userService.getAllUsers(page, limit, filters);
+      setUsers(data.users || []);
+      return data;
     } catch (err) {
-      setError("Failed to load user details");
+      setError("Failed to fetch users");
       console.error(err);
       return null;
     } finally {
@@ -104,21 +48,56 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  // Update user (admin only)
-  const updateUser = async (userId, userData) => {
-    if (!userToken || !isAdmin) return false;
+  // Get specific user (admin/librarian only)
+  const fetchUser = async (userId) => {
+    if (!isAuthenticated || !isLibrarian) return null;
 
     setLoading(true);
     setError(null);
+    try {
+      const userData = await userService.getUser(userId);
+      setSelectedUserId(userId);
+      return userData;
+    } catch (err) {
+      setError("Failed to fetch user");
+      console.error(err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Create a new user (admin only)
+  const createUser = async (userData) => {
+    if (!isAuthenticated || !isAdmin) return false;
+
+    setLoading(true);
+    setError(null);
+    try {
+      await userService.createUser(userData);
+      // Refresh users list after creating
+      await fetchUsers();
+      return true;
+    } catch (err) {
+      setError("Failed to create user");
+      console.error(err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update a user (admin/librarian)
+  const updateUser = async (userId, userData) => {
+    if (!isAuthenticated || !isLibrarian) return false;
+
+    setLoading(true);
+    setError(null);
     try {
       await userService.updateUser(userId, userData);
-      // Refresh user list
-      await loadUsers(usersPagination.page, usersPagination.limit);
-
-      // Update selected user if it's the same
-      if (selectedUser && selectedUser.id === userId) {
-        setSelectedUser({ ...selectedUser, ...userData });
+      // Update users list if it's loaded
+      if (users.length > 0) {
+        setUsers(users.map((user) => (user.id === userId ? { ...user, ...userData } : user)));
       }
       return true;
     } catch (err) {
@@ -130,25 +109,81 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  // Change user role (admin only)
-  const changeUserRole = async (userId, role) => {
-    if (!userToken || !isAdmin) return false;
+  // Delete a user (admin only)
+  const deleteUser = async (userId) => {
+    if (!isAuthenticated || !isAdmin) return false;
 
     setLoading(true);
     setError(null);
-
     try {
-      await userService.changeUserRole(userId, role);
-      // Refresh user list
-      await loadUsers(usersPagination.page, usersPagination.limit);
+      await userService.deleteUser(userId);
+      // Update users list if it's loaded
+      setUsers(users.filter((user) => user.id !== userId));
+      return true;
+    } catch (err) {
+      setError("Failed to delete user");
+      console.error(err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Update selected user if it's the same
-      if (selectedUser && selectedUser.id === userId) {
-        setSelectedUser({ ...selectedUser, role });
+  // Get books borrowed by specific user (admin/librarian)
+  const fetchUserBorrowedBooks = async (userId) => {
+    if (!isAuthenticated || !isLibrarian) return null;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await bookService.getBorrowedBooksByUser(userId);
+      setUserBooksBorrowed(data.books || []);
+      setSelectedUserId(userId);
+      return data.books || [];
+    } catch (err) {
+      setError("Failed to fetch user's borrowed books");
+      console.error(err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get books reserved by specific user (admin/librarian)
+  const fetchUserReservedBooks = async (userId) => {
+    if (!isAuthenticated || !isLibrarian) return null;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await bookService.getReservedBooksByUser(userId);
+      setUserBooksReserved(data.books || []);
+      setSelectedUserId(userId);
+      return data.books || [];
+    } catch (err) {
+      setError("Failed to fetch user's reserved books");
+      console.error(err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Borrow a book on behalf of user (admin/librarian)
+  const borrowBookForUser = async (bookId, userId) => {
+    if (!isAuthenticated || !isLibrarian) return false;
+
+    setLoading(true);
+    setError(null);
+    try {
+      await bookService.borrowBook(bookId, userId);
+      // Refresh user's borrowed books if needed
+      if (selectedUserId === userId) {
+        await fetchUserBorrowedBooks(userId);
       }
       return true;
     } catch (err) {
-      setError("Failed to change user role");
+      setError("Failed to borrow book for user");
       console.error(err);
       return false;
     } finally {
@@ -156,18 +191,21 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  // Book management functions (admin only)
-  const addBook = async (bookData) => {
-    if (!userToken || !isAdmin) return false;
+  // Return a book on behalf of user (admin/librarian)
+  const returnBookForUser = async (bookId, userId, condition = null) => {
+    if (!isAuthenticated || !isLibrarian) return false;
 
     setLoading(true);
     setError(null);
-
     try {
-      await bookService.addBook(bookData);
+      await bookService.returnBook(bookId, userId, condition);
+      // Refresh user's borrowed books if needed
+      if (selectedUserId === userId) {
+        await fetchUserBorrowedBooks(userId);
+      }
       return true;
     } catch (err) {
-      setError("Failed to add book");
+      setError("Failed to return book for user");
       console.error(err);
       return false;
     } finally {
@@ -175,35 +213,36 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  const updateBook = async (bookId, bookData) => {
-    if (!userToken || !isAdmin) return false;
+  // Get borrowing statistics (admin)
+  const fetchBookStats = async () => {
+    if (!isAuthenticated || !isAdmin) return null;
 
     setLoading(true);
     setError(null);
-
     try {
-      await bookService.updateBook(bookId, bookData);
-      return true;
+      const data = await bookService.getBookStats();
+      setStats(data);
+      return data;
     } catch (err) {
-      setError("Failed to update book");
+      setError("Failed to fetch book statistics");
       console.error(err);
-      return false;
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteBook = async (bookId) => {
-    if (!userToken || !isAdmin) return false;
+  // Import books from file (admin)
+  const importBooks = async (fileData) => {
+    if (!isAuthenticated || !isAdmin) return false;
 
     setLoading(true);
     setError(null);
-
     try {
-      await bookService.deleteBook(bookId);
+      await bookService.importBooks(fileData);
       return true;
     } catch (err) {
-      setError("Failed to delete book");
+      setError("Failed to import books");
       console.error(err);
       return false;
     } finally {
@@ -211,41 +250,56 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  // Load initial data when authenticated as admin
-  useEffect(() => {
-    if (userToken && isAdmin) {
-      loadSystemMetrics();
-      loadBookStats();
-      loadUsers();
-    }
-  }, [userToken, isAdmin, loadSystemMetrics, loadBookStats, loadUsers]);
+  // Export books catalog (admin)
+  const exportBooks = async () => {
+    if (!isAuthenticated || !isAdmin) return false;
 
-  return (
-    <AdminContext.Provider
-      value={{
-        allUsers,
-        selectedUser,
-        systemMetrics,
-        bookStats,
-        loading,
-        error,
-        usersPagination,
-        loadUsers,
-        loadUserDetails,
-        updateUser,
-        changeUserRole,
-        loadSystemMetrics,
-        loadBookStats,
-        addBook,
-        updateBook,
-        deleteBook,
-      }}
-    >
-      {children}
-    </AdminContext.Provider>
-  );
+    setLoading(true);
+    setError(null);
+    try {
+      const blob = await bookService.exportBooks();
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = "books-catalog.csv";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      return true;
+    } catch (err) {
+      setError("Failed to export books");
+      console.error(err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const value = {
+    isAdmin,
+    isLibrarian,
+    loading,
+    error,
+    users,
+    stats,
+    userBooksBorrowed,
+    userBooksReserved,
+    selectedUserId,
+    fetchUsers,
+    fetchUser,
+    createUser,
+    updateUser,
+    deleteUser,
+    fetchUserBorrowedBooks,
+    fetchUserReservedBooks,
+    borrowBookForUser,
+    returnBookForUser,
+    fetchBookStats,
+    importBooks,
+    exportBooks,
+  };
+
+  return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 };
-
-export const useAdmin = () => useContext(AdminContext);
-
-export default AdminProvider;
