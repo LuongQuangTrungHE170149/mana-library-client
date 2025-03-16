@@ -27,6 +27,7 @@ export const IMPLEMENTED_SCREENS = {
  * @returns {Function} - A component that is either the provided component or EmptyScreen
  */
 export const safeScreen = (Component, routeName) => {
+  console.log("safeScreen", routeName);
   // If screen is explicitly marked as implemented, use it
   if (IMPLEMENTED_SCREENS[routeName]) {
     return Component;
