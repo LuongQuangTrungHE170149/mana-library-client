@@ -1,0 +1,17 @@
+meta {
+  name: Toggle 2FA
+  type: http
+  seq: 8
+}
+
+put {
+  url: http://localhost:8000/api/v1/auth/2fa
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "code": "123456"
+  }
+}
