@@ -6,6 +6,31 @@ meta {
 
 patch {
   url: http://localhost:8000/api/v1/users/profile
-  body: none
+  body: json
   auth: none
+}
+
+body:json {
+  {
+    "profile": {
+      "firstName": "Updated",
+      "lastName": "Name",
+      "avatar": "https://example.com/new-avatar.jpg",
+      "address": {
+        "city": "Chicago",
+        "state": "IL"
+      }
+    },
+    "library": {
+      "readingPreferences": {
+        "favoriteGenres": ["Mystery", "Science Fiction"]
+      },
+      "notificationPreferences": {
+        "notifyOnDue": true,
+        "notifyOnOverdue": true,
+        "notifyOnHoldAvailable": true
+      }
+    },
+    "password": "NewSecurePassword123!"
+  }
 }

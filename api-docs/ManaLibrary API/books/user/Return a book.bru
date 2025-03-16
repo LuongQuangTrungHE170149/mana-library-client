@@ -6,10 +6,17 @@ meta {
 
 post {
   url: http://localhost:8000/api/v1/books/:bookId/return
-  body: none
+  body: json
   auth: none
 }
 
 params:path {
   bookId: 
+}
+
+body:json {
+  {
+    "userId": "userId",
+    "condition": "good"  // Optional
+  }
 }

@@ -6,10 +6,28 @@ meta {
 
 patch {
   url: http://localhost:8000/api/v1/users/:userId
-  body: none
+  body: json
   auth: none
 }
 
 params:path {
   userId: 
+}
+
+body:json {
+  {
+    "profile": {
+      "firstName": "Updated",
+      "lastName": "Name"
+    },
+    "auth": {
+      "role": "LIBRARIAN",
+      "verified": true
+    },
+    "library": {
+      "membershipStatus": "active",
+      "accountBalance": 0,
+      "fines": 0
+    }
+  }
 }

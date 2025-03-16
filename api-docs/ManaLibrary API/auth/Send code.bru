@@ -1,7 +1,7 @@
 meta {
   name: Send code
   type: http
-  seq: 5
+  seq: 6
 }
 
 post {
@@ -12,7 +12,12 @@ post {
 
 body:json {
   {
-    "email": "newuser@example.com",
-    "password": "SecurePassword123!"
+    "email": "user@example.com"
   }
+  
+  /* OR
+  {
+    "phone": "+12345678901"
+  }
+  */
 }
