@@ -1,0 +1,15 @@
+meta {
+  name: Mark a notification as read
+  type: http
+  seq: 7
+}
+
+post {
+  url: http://localhost:8000/api/v1/users/notifications/:notificationId/read
+  body: none
+  auth: none
+}
+
+params:path {
+  notificationId: 
+}
