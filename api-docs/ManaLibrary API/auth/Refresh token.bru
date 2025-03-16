@@ -1,0 +1,18 @@
+meta {
+  name: Refresh token
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:8000/api/v1/auth/refresh
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "newuser@example.com",
+    "password": "SecurePassword123!"
+  }
+}

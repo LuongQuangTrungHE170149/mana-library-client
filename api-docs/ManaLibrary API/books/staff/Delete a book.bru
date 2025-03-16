@@ -1,0 +1,15 @@
+meta {
+  name: Delete a book
+  type: http
+  seq: 2
+}
+
+delete {
+  url: http://localhost:8000/api/v1/books/:bookId
+  body: none
+  auth: none
+}
+
+params:path {
+  bookId: 
+}

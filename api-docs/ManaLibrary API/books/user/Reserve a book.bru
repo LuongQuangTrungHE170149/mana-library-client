@@ -1,0 +1,15 @@
+meta {
+  name: Reserve a book
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8000/api/v1/books/:bookId/reserve
+  body: none
+  auth: none
+}
+
+params:path {
+  bookId: 
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Cancel reservation
+  type: http
+  seq: 4
+}
+
+delete {
+  url: http://localhost:8000/api/v1/books/:bookId/cancel-reservation
+  body: none
+  auth: none
+}
+
+params:path {
+  bookId: 
+}
