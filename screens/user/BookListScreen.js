@@ -1,32 +1,50 @@
-import React from "react";
-import { View, Text, FlatList, Image, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 
 const books = [
     {
         title: "1984",
         description: "Dystopian novel set in a totalitarian society.",
-        image: { uri: "https://plus.unsplash.com/premium_photo-1677567996070-68fa4181775a?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
     },
     {
         title: "To Kill a Mockingbird",
         description: "A story of racial injustice in the American South.",
-        image: { uri: "https://plus.unsplash.com/premium_photo-1677567996070-68fa4181775a?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
     },
     {
         title: "Pride and Prejudice",
         description: "Classic novel of manners and marriage.",
-        image: { uri: "https://plus.unsplash.com/premium_photo-1677567996070-68fa4181775a?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
     },
 ];
 
 const BookListScreen = () => {
+    const [searchQuery, setSearchQuery] = useState(""); // State for search input
+    const [filteredBooks, setFilteredBooks] = useState(books); // State for filtered book list
+
+    const handleSearch = (text) => {
+        setSearchQuery(text);
+        if (text === "") {
+            setFilteredBooks(books); // Reset to all books if search query is empty
+        } else {
+            const filtered = books.filter((book) =>
+                book.title.toLowerCase().includes(text.toLowerCase())
+            );
+            setFilteredBooks(filtered);
+        }
+    };
+
     return (
         <View style={styles.container}>
-            <TextInput style={styles.searchBar} placeholder="Search books..." />
+            {/* Search Bar */}
+            <TextInput
+                style={styles.searchBar}
+                placeholder="Search books..."
+                value={searchQuery}
+                onChangeText={handleSearch} // Update search query and filter list
+            />
 
             <Text style={styles.sectionTitle}>Recommended books</Text>
             <FlatList
-                data={books}
+                data={filteredBooks}
                 keyExtractor={(item) => item.title}
                 renderItem={({ item }) => (
                     <View style={styles.bookCard}>
@@ -37,7 +55,6 @@ const BookListScreen = () => {
                                 <Text style={styles.borrowText}>Borrow</Text>
                             </TouchableOpacity>
                         </View>
-                        <View style={styles.bookImagePlaceholder} />
                     </View>
                 )}
             />
@@ -72,8 +89,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 15,
         marginBottom: 10,
-        alignItems: "center",
-        justifyContent: "space-between",
     },
     bookInfo: {
         flex: 1,
@@ -97,12 +112,6 @@ const styles = StyleSheet.create({
     },
     borrowText: {
         color: "#6200ea",
-    },
-    bookImagePlaceholder: {
-        width: 60,
-        height: 60,
-        backgroundColor: "#ddd",
-        borderRadius: 5,
     },
     showMoreButton: {
         backgroundColor: "#eee",

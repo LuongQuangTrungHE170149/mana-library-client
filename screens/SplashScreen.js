@@ -26,7 +26,7 @@ const SplashScreen = ({ navigation }) => {
         <TouchableOpacity
           onPress={() => {
             console.log("Navigating to Auth...");
-            navigation.navigate("User", { screen: "Auth" });
+            navigation.navigate("Auth", { screen: "Login" });
           }}
           style={styles.getStartedButtonContainer}
         >

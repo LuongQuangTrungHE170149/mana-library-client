@@ -5,17 +5,17 @@ const recommendedBooks = [
     {
         title: "The Great Gatsby",
         description: "A classic novel set in the Roaring Twenties.",
-        image: require("./assets/gatsby.png"),
+        image: { uri: "https://plus.unsplash.com/premium_photo-1677567996070-68fa4181775a?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
     },
     {
         title: "To Kill a Mockingbird",
         description: "A profound novel about racial injustice.",
-        image: require("./assets/mockingbird.png"),
+        image: { uri: "https://plus.unsplash.com/premium_photo-1677567996070-68fa4181775a?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
     },
     {
         title: "1984",
         description: "A dystopian novel about totalitarianism.",
-        image: require("./assets/1984.png"),
+        image: { uri: "https://plus.unsplash.com/premium_photo-1677567996070-68fa4181775a?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
     },
 ];
 
