@@ -1,105 +1,113 @@
-import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
-
-const profile = {
-    firstName: "John",
-    lastName: "Doe",
-    dob: "January 1, 1990",
-    avatar: "https://e7.pngegg.com/pngimages/84/165/png-clipart-united-states-avatar-organization-information-user-avatar-service-computer-wallpaper-thumbnail.png",
-    address: {
-        street: "123 Main St",
-        city: "New York",
-        state: "NY",
-        zipCode: "10001",
-        country: "USA",
-    },
-    preferredLanguage: "English",
-};
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
+import { Avatar, Card, Divider } from "react-native-paper";
 
 const ProfileScreen = () => {
+    const [user, setUser] = useState({
+        avatar: "https://i.pravatar.cc/150", // Dummy avatar
+        username: "John Doe",
+        dob: "1995-08-15",
+        email: "johndoe@example.com",
+        address: "123 Main St, New York, USA",
+        booksBorrowed: 20,
+        booksRead: 15,
+        booksBorrowing: ["Atomic Habits", "The Alchemist", "Clean Code"],
+    });
+
     return (
-        <View style={styles.container}>
-            {/* Profile Avatar */}
-            <Image source={{ uri: profile.avatar }} style={styles.avatar} />
-
-            {/* Name */}
-            <Text style={styles.name}>{profile.firstName} {profile.lastName}</Text>
-            <Text style={styles.dob}>📅 {profile.dob}</Text>
-
-            {/* Address Card */}
-            <View style={styles.addressCard}>
-                <Text style={styles.sectionTitle}>🏠 Address</Text>
-                <Text style={styles.address}>
-                    {profile.address.street},{"\n"}
-                    {profile.address.city}, {profile.address.state} {profile.address.zipCode},{"\n"}
-                    {profile.address.country}
-                </Text>
+        <ScrollView contentContainerStyle={styles.container}>
+            {/* Avatar */}
+            <View style={styles.avatarContainer}>
+                <Avatar.Image size={100} source={{ uri: user.avatar }} />
+                <Text style={styles.username}>{user.username}</Text>
             </View>
 
-            {/* Preferred Language */}
-            <Text style={styles.language}>🗣 Preferred Language: <Text style={styles.languageText}>{profile.preferredLanguage}</Text></Text>
-        </View>
+            {/* User Information */}
+            <Card style={styles.card}>
+                <View style={styles.infoRow}>
+                    <Text style={styles.label}>Date of Birth:</Text>
+                    <Text style={styles.value}>{user.dob}</Text>
+                </View>
+                <Divider />
+                <View style={styles.infoRow}>
+                    <Text style={styles.label}>Email:</Text>
+                    <Text style={styles.value}>{user.email}</Text>
+                </View>
+                <Divider />
+                <View style={styles.infoRow}>
+                    <Text style={styles.label}>Address:</Text>
+                    <Text style={styles.value}>{user.address}</Text>
+                </View>
+            </Card>
+
+            {/* Book Statistics */}
+            <Card style={styles.card}>
+                <View style={styles.infoRow}>
+                    <Text style={styles.label}>Books Borrowed:</Text>
+                    <Text style={styles.value}>{user.booksBorrowed}</Text>
+                </View>
+                <Divider />
+                <View style={styles.infoRow}>
+                    <Text style={styles.label}>Books Read:</Text>
+                    <Text style={styles.value}>{user.booksRead}</Text>
+                </View>
+            </Card>
+
+            {/* Currently Borrowing */}
+            <Card style={styles.card}>
+                <Text style={styles.sectionTitle}>Books Borrowing</Text>
+                {user.booksBorrowing.map((book, index) => (
+                    <Text key={index} style={styles.bookItem}>
+                        • {book}
+                    </Text>
+                ))}
+            </Card>
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
         padding: 20,
-        backgroundColor: "#F5F5F5",
+        backgroundColor: "#f5f5f5",
+        flexGrow: 1,
     },
-    avatar: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        marginBottom: 15,
-        borderWidth: 3,
-        borderColor: "#007AFF",
+    avatarContainer: {
+        alignItems: "center",
+        marginBottom: 20,
     },
-    name: {
+    username: {
         fontSize: 22,
         fontWeight: "bold",
-        color: "#333",
+        marginTop: 10,
     },
-    dob: {
-        fontSize: 16,
-        color: "#555",
-        marginTop: 5,
-    },
-    addressCard: {
-        marginTop: 20,
+    card: {
         backgroundColor: "#fff",
         padding: 15,
         borderRadius: 10,
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 5,
+        marginBottom: 15,
         elevation: 3,
-        width: "90%",
-        alignItems: "center",
+    },
+    infoRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        paddingVertical: 8,
+    },
+    label: {
+        fontSize: 16,
+        fontWeight: "bold",
+    },
+    value: {
+        fontSize: 16,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: "bold",
-        marginBottom: 5,
-        color: "#007AFF",
+        marginBottom: 10,
     },
-    address: {
+    bookItem: {
         fontSize: 16,
-        textAlign: "center",
-        color: "#444",
-    },
-    language: {
-        fontSize: 16,
-        marginTop: 15,
-        fontWeight: "bold",
-    },
-    languageText: {
-        fontSize: 16,
-        color: "#007AFF",
+        paddingVertical: 2,
     },
 });
 
