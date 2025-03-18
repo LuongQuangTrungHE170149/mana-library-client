@@ -8,10 +8,16 @@ import EmptyScreen from "../components/EmptyScreen";
 export const IMPLEMENTED_SCREENS = {
   // Auth screens
   Login: true,
+  Register: true,
+  ForgotPassword: true,
+  VerifyCode: true,
 
   // User screens
-  // Home: true,
-  // BooksList: true,
+  Home: true,
+  BooksList: true,
+  Profile: true,
+  History: true,
+  Settings: true,
 
   // Admin screens
   // AdminLogin: true,
@@ -27,6 +33,7 @@ export const IMPLEMENTED_SCREENS = {
  * @returns {Function} - A component that is either the provided component or EmptyScreen
  */
 export const safeScreen = (Component, routeName) => {
+  console.log("safeScreen", routeName);
   // If screen is explicitly marked as implemented, use it
   if (IMPLEMENTED_SCREENS[routeName]) {
     return Component;
