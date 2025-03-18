@@ -16,7 +16,7 @@ const SettingsStack = createStackNavigator();
 import HomeScreen from "../screens/user/HomeScreen";
 import BooksListScreen from "../screens/user/BookListScreen";
 import ProfileScreen from "../screens/user/ProfileScreen";
-const BookDetailScreen = importScreen("../screens/user/BookDetailScreen", "Book Details");
+import BookDetailScreen from "../screens/user/BookDetailScreen";
 import HistoryScreen from "../screens/user/HistoryScreen";
 import SettingsScreen from "../screens/user/SettingsScreen";
 const HomeStackScreen = () => (
@@ -38,7 +38,7 @@ const BooksStackScreen = () => (
     />
     <BooksStack.Screen
       name="BookDetail"
-      component={safeScreen(BookDetailScreen, "Book Details")}
+      component={BookDetailScreen}
       options={{ title: "Book Details" }}
     />
   </BooksStack.Navigator>
