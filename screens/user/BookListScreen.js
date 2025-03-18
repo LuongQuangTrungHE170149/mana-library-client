@@ -16,14 +16,14 @@ const books = [
     },
 ];
 
-const BookListScreen = () => {
-    const [searchQuery, setSearchQuery] = useState(""); // State for search input
-    const [filteredBooks, setFilteredBooks] = useState(books); // State for filtered book list
+const BookListScreen = ({ navigation }) => {
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filteredBooks, setFilteredBooks] = useState(books);
 
     const handleSearch = (text) => {
         setSearchQuery(text);
         if (text === "") {
-            setFilteredBooks(books); // Reset to all books if search query is empty
+            setFilteredBooks(books);
         } else {
             const filtered = books.filter((book) =>
                 book.title.toLowerCase().includes(text.toLowerCase())
@@ -32,14 +32,18 @@ const BookListScreen = () => {
         }
     };
 
+    const handleNavigateToBookDetail = (book) => {
+        console.log("Navigating to BookDetailScreen for book:", book.title);
+        navigation.navigate("BookDetail", { book });
+    };
+
     return (
         <View style={styles.container}>
-            {/* Search Bar */}
             <TextInput
                 style={styles.searchBar}
                 placeholder="Search books..."
                 value={searchQuery}
-                onChangeText={handleSearch} // Update search query and filter list
+                onChangeText={handleSearch}
             />
 
             <Text style={styles.sectionTitle}>Recommended books</Text>
@@ -47,7 +51,10 @@ const BookListScreen = () => {
                 data={filteredBooks}
                 keyExtractor={(item) => item.title}
                 renderItem={({ item }) => (
-                    <View style={styles.bookCard}>
+                    <TouchableOpacity
+                        style={styles.bookCard}
+                        onPress={() => handleNavigateToBookDetail(item)}
+                    >
                         <View style={styles.bookInfo}>
                             <Text style={styles.bookTitle}>{item.title}</Text>
                             <Text style={styles.bookDescription}>{item.description}</Text>
@@ -55,11 +62,14 @@ const BookListScreen = () => {
                                 <Text style={styles.borrowText}>Borrow</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 )}
             />
 
-            <TouchableOpacity style={styles.showMoreButton}>
+            <TouchableOpacity
+                style={styles.showMoreButton}
+                onPress={() => handleNavigateToBookDetail()}
+            >
                 <Text style={styles.showMoreText}>Show more</Text>
             </TouchableOpacity>
         </View>

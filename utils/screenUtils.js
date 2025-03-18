@@ -1,5 +1,6 @@
 import React from "react";
 import EmptyScreen from "../components/EmptyScreen";
+import BookDetailScreen from "../screens/user/BookDetailScreen";
 
 /**
  * List of screens that are actually implemented
@@ -18,6 +19,7 @@ export const IMPLEMENTED_SCREENS = {
   Profile: true,
   History: true,
   Settings: true,
+  BookDetail: true,
 
   // Admin screens
   // AdminLogin: true,
