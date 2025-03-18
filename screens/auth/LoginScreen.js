@@ -2,60 +2,62 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 
-const LoginScreen = () => {
+const LoginScreen = ({ navigation }) => {
     const { login, error, loading } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     const handleLogin = async () => {
-        // Kiểm tra tính hợp lệ
-        if (!email || !password) {
-            alert("Vui lòng điền đầy đủ thông tin.");
-            return;
-        }
-
-        const response = await login({ email, password });
-
-        if (response.success) {
-            // Điều hướng đến màn hình chính sau khi đăng nhập thành công
-            alert("Đăng nhập thành công!");
-        } else {
-            // Hiển thị lỗi nếu đăng nhập thất bại
-            alert(error || "Đăng nhập thất bại. Vui lòng thử lại.");
-        }
+        login({ email, password });
+        navigation.navigate("VerifyCode");
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Đăng nhập</Text>
+            <Text style={styles.title}>Login</Text>
+            <Text style={styles.description}>
+                Login member account to keep track of your books and receive the benefits
+            </Text>
 
             <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder="Your email address"
                 value={email}
                 onChangeText={setEmail}
             />
             <TextInput
                 style={styles.input}
-                placeholder="Mật khẩu"
+                placeholder="Enter your password"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
             />
 
-            <TouchableOpacity onPress={handleLogin} style={styles.button}>
-                {loading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                    <Text style={styles.buttonText}>Đăng nhập</Text>
-                )}
-            </TouchableOpacity>
+            <TouchableOpacity
+                onPress={handleLogin}
+                style={styles.button}
+            >
+                <Text style={styles.buttonText}>Login</Text>
 
-            <TouchableOpacity onPress={() => alert("Chức năng đăng ký")} style={styles.registerButton}>
-                <Text style={styles.registerButtonText}>Đăng ký</Text>
             </TouchableOpacity>
 
             {error && <Text style={styles.errorText}>{error}</Text>}
+            <View style={styles.buttonContainer}>
+                <Text style={styles}>
+                    Don't have an account?{" "}
+                </Text>
+                <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+                    <Text style={{ color: "#6970e4" }}>
+                        Sign up now
+                    </Text>
+                </TouchableOpacity>
+            </View>
+      // Thêm Forgot Password
+            <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
+                <Text style={{ color: "#6970e4", marginTop: 10 }}>
+                    Forgot password?
+                </Text>
+            </TouchableOpacity>
         </View>
     );
 };
@@ -68,11 +70,22 @@ const styles = StyleSheet.create({
         backgroundColor: "#f5f5f5",
         padding: 20,
     },
+    buttonContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+    },
     title: {
         fontSize: 24,
         fontWeight: "bold",
         marginBottom: 20,
     },
+    description: {
+        fontSize: 16,
+        marginBottom: 20,
+        textAlign: "center",
+    },
+
     input: {
         width: "100%",
         padding: 15,
@@ -85,26 +98,12 @@ const styles = StyleSheet.create({
     button: {
         width: "100%",
         padding: 15,
-        backgroundColor: "#4CAF50",
+        backgroundColor: "#6970e4",
         borderRadius: 5,
         alignItems: "center",
     },
     buttonText: {
-        color: "#fff",
-        fontSize: 16,
-    },
-    registerButton: {
-        width: "100%",
-        padding: 15,
-        backgroundColor: "#fff",
-        borderRadius: 5,
-        alignItems: "center",
-        borderColor: "#ccc",
-        borderWidth: 1,
-        marginTop: 10,
-    },
-    registerButtonText: {
-        color: "#4CAF50",
+        color: "white",
         fontSize: 16,
     },
     errorText: {

@@ -1,65 +1,84 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import CheckBox from "react-native-checkbox";
 import { useAuth } from "../../context/AuthContext";
+import { LinearGradient } from "expo-linear-gradient";
 
 const RegisterScreen = ({ navigation }) => {
-    const { register, error, loading } = useAuth();  // Lấy hàm register và trạng thái từ context
+    const { register, error, loading } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [fullName, setFullName] = useState("");
+    const [isChecked, setIsChecked] = useState(false); // Trạng thái checkbox
 
     const handleRegister = async () => {
-        // Kiểm tra tính hợp lệ
-        if (!email || !password || !fullName) {
-            alert("Vui lòng điền đầy đủ thông tin.");
-            return;
-        }
-
-        const response = await register({ email, password, fullName });
-
-        if (response.success) {
-            // Điều hướng đến màn hình đăng nhập sau khi đăng ký thành công
-            navigation.navigate("Login");
-        } else {
-            // Hiển thị lỗi nếu đăng ký thất bại
-            alert(error || "Đăng ký thất bại. Vui lòng thử lại.");
-        }
+        register({ email, password, fullName });
+        alert("Đăng ký thành công!");
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Đăng ký</Text>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.description}>
+                Create your account to manage your library effortlessly
+            </Text>
 
             <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder="Your email address"
                 value={email}
                 onChangeText={setEmail}
             />
             <TextInput
                 style={styles.input}
-                placeholder="Mật khẩu"
+                placeholder="Enter your password"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
             />
             <TextInput
                 style={styles.input}
-                placeholder="Họ và tên"
+                placeholder="Enter your full name"
                 value={fullName}
                 onChangeText={setFullName}
             />
 
-            <TouchableOpacity onPress={handleRegister} style={styles.button}>
+            {/* Checkbox điều khoản */}
+            <View style={styles.checkboxContainer}>
+                <CheckBox
+                    label="I agree with Terms & Conditions"
+                    checked={isChecked}
+                    onChange={() => setIsChecked(!isChecked)}
+                />
+            </View>
+
+            <TouchableOpacity
+                onPress={handleRegister}
+                style={[styles.button, !isChecked && styles.buttonDisabled]} // Vô hiệu hóa nút nếu chưa tích
+                disabled={!isChecked}
+            >
                 {loading ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                    <Text style={styles.buttonText}>Đăng ký</Text>
+                    <Text
+                        onPress={handleRegister} style={styles.buttonText}>Sign Up</Text>
                 )}
             </TouchableOpacity>
 
             {error && <Text style={styles.errorText}>{error}</Text>}
+            <View style={styles.buttonContainer}>
+                <Text style={styles}>
+                    Already registered?{" "}
+
+                </Text>
+                <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                    <Text style={{ color: "#6970e4" }}>
+                        Login now
+                    </Text>
+                </TouchableOpacity>
+            </View>
         </View>
+
     );
 };
 
@@ -71,11 +90,23 @@ const styles = StyleSheet.create({
         backgroundColor: "#f5f5f5",
         padding: 20,
     },
+    buttonContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+    },
     title: {
         fontSize: 24,
         fontWeight: "bold",
         marginBottom: 20,
     },
+    description: {
+        fontSize: 16,
+        marginBottom: 20,
+        textAlign: "center",
+    },
+
+
     input: {
         width: "100%",
         padding: 15,
@@ -85,12 +116,20 @@ const styles = StyleSheet.create({
         borderColor: "#ccc",
         borderWidth: 1,
     },
+    checkboxContainer: {
+        flexDirection: "row",
+        justifyContent: "flex-start", // Đẩy checkbox và "I agree" về phía bên trái
+        marginBottom: 15,
+    },
     button: {
         width: "100%",
         padding: 15,
-        backgroundColor: "#4CAF50",
+        backgroundColor: "#6970e4",
         borderRadius: 5,
         alignItems: "center",
+    },
+    buttonDisabled: {
+        backgroundColor: "#ccc",
     },
     buttonText: {
         color: "#fff",

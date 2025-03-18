@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, FlatList, Image, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, Image, StyleSheet, ScrollView } from "react-native";
 
 const recommendedBooks = [
     {
@@ -19,34 +19,56 @@ const recommendedBooks = [
     },
 ];
 
+const borrowedBooks = [
+    { title: "The Great Gatsby", returnDate: "Mar 24, 2024" },
+    { title: "To Kill a Mockingbird", returnDate: "Apr 10, 2024" },
+    { title: "1984", returnDate: "May 05, 2024" },
+];
+
 const HomeScreen = () => {
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             <Text style={styles.greeting}>Good morning,</Text>
             <Text style={styles.username}>User!</Text>
             <Text style={styles.stat}>You have completed <Text style={styles.bold}>32</Text> books so far.</Text>
             <Text style={styles.stat}>You are lending <Text style={styles.bold}>2</Text> books.</Text>
 
-            <Text style={styles.sectionTitle}>We think you'll also like these</Text>
-            <FlatList
-                data={recommendedBooks}
-                keyExtractor={(item) => item.title}
-                renderItem={({ item }) => (
-                    <View style={styles.bookCard}>
-                        <Image source={item.image} style={styles.bookImage} />
-                        <View style={styles.bookInfo}>
-                            <Text style={styles.bookTitle}>{item.title}</Text>
-                            <Text style={styles.bookDescription}>{item.description}</Text>
+            {/* Recommended Books */}
+            <View style={styles.recommendedBooks}>
+                <Text style={styles.sectionTitle}>We think you'll also like these</Text>
+                <FlatList
+                    data={recommendedBooks}
+                    keyExtractor={(item) => item.title}
+                    nestedScrollEnabled
+                    scrollEnabled={false} // Prevent FlatList from scrolling inside ScrollView
+                    renderItem={({ item }) => (
+                        <View style={styles.bookCard}>
+                            <View style={styles.bookInfo}>
+                                <Text style={styles.bookTitle}>{item.title}</Text>
+                                <Text style={styles.bookDescription}>{item.description}</Text>
+                            </View>
+                            <Image source={item.image} style={styles.bookImage} />
                         </View>
-                    </View>
-                )}
-            />
+                    )}
+                />
+            </View>
 
-            <Text style={styles.sectionTitle}>Recent Borrowed Books</Text>
-            <TouchableOpacity>
-                <Text style={styles.borrowedBook}>The Alchemist</Text>
-            </TouchableOpacity>
-            <Text style={styles.returnDate}>Return by Mar 24, 2024</Text>
+            {/* Borrowed Books */}
+            <View style={styles.borrowedBooks}>
+                <Text style={styles.sectionTitle}>Recent Borrowed Books</Text>
+                <FlatList
+                    data={borrowedBooks}
+                    keyExtractor={(item) => item.title}
+                    nestedScrollEnabled
+                    scrollEnabled={false} // Prevent FlatList from scrolling inside ScrollView
+                    renderItem={({ item }) => (
+                        <View style={styles.borrowedBook}>
+                            <Text style={styles.title}>{item.title}</Text>
+                            <Text style={styles.returnDate}>Return by {item.returnDate}</Text>
+                        </View>
+                    )}
+                />
+            </View>
         </ScrollView>
     );
 };
@@ -57,13 +79,13 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
     },
     greeting: {
-        fontSize: 24,
-        fontWeight: "bold",
+        fontSize: 20,
     },
     username: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: "bold",
         color: "#000",
+        marginBottom: 5,
     },
     stat: {
         fontSize: 16,
@@ -72,44 +94,63 @@ const styles = StyleSheet.create({
     bold: {
         fontWeight: "bold",
     },
+    recommendedBooks: {
+        marginTop: 50,
+    },
     sectionTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: "bold",
-        marginTop: 20,
+        marginBottom: 10,
     },
     bookCard: {
         flexDirection: "row",
-        backgroundColor: "#f9f9f9",
-        borderRadius: 10,
+        backgroundColor: "#fff",
+        borderRadius: 15,
         padding: 10,
-        marginTop: 10,
+        marginVertical: 8,
         alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3, // For Android shadow
     },
     bookImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 5,
+        width: 80,
+        height: 80,
+        borderRadius: 10,
+        marginLeft: 5,
     },
     bookInfo: {
-        marginLeft: 10,
+        flex: 1,
+        marginLeft: 5,
     },
     bookTitle: {
         fontSize: 16,
         fontWeight: "bold",
+        color: "#000",
     },
     bookDescription: {
         fontSize: 14,
         color: "#555",
+        marginTop: 4,
+    },
+    borrowedBooks: {
+        marginTop: 30,
     },
     borrowedBook: {
-        fontSize: 16,
-        color: "#4169E1",
-        fontWeight: "bold",
         marginTop: 10,
+        padding: 10,
+    },
+    title: {
+        fontSize: 18,
+        color: "#636ae8",
+        fontWeight: "bold",
     },
     returnDate: {
         fontSize: 14,
         color: "#555",
+        marginTop: 2,
     },
 });
 

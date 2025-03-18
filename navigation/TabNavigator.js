@@ -24,7 +24,7 @@ const HomeStackScreen = () => (
     <HomeStack.Screen
       name="Home"
       component={safeScreen(HomeScreen, "Home")}
-      options={{ headerShown: true, title: "Home" }}
+      options={{ headerShown: false }}
     />
   </HomeStack.Navigator>
 );
@@ -49,7 +49,7 @@ const ProfileStackScreen = () => (
     <ProfileStack.Screen
       name="Profile"
       component={safeScreen(ProfileScreen, "Profile")}
-      options={{ headerShown: true, title: "Profile" }}
+      options={{ headerShown: false }}
     />
   </ProfileStack.Navigator>
 );
@@ -59,7 +59,7 @@ const HistoryStackScreen = () => (
     <HistoryStack.Screen
       name="History"
       component={safeScreen(HistoryScreen, "History")}
-      options={{ headerShown: true, title: "History" }}
+      options={{ headerShown: false }}
     />
   </HistoryStack.Navigator>
 );
@@ -69,7 +69,7 @@ const SettingsStackScreen = () => (
     <SettingsStack.Screen
       name="Settings"
       component={safeScreen(SettingsScreen, "Settings")}
-      options={{ headerShown: true, title: "Settings" }}
+      options={{ headerShown: false }}
     />
   </SettingsStack.Navigator>
 );
