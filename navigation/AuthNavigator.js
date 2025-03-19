@@ -8,7 +8,7 @@ import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
 import VerifyCodeScreen from "../screens/auth/VerifyCodeScreen";
-
+import ChatScreen from "../screens/auth/ChatScreen";
 const AuthNavigator = () => {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: true }}>
@@ -27,6 +27,10 @@ const AuthNavigator = () => {
       <AuthStack.Screen
         name="VerifyCode"
         component={safeScreen(VerifyCodeScreen, "VerifyCode")}
+      />
+      <AuthStack.Screen
+        name="Chat"
+        component={safeScreen(ChatScreen, "Chat")}
       />
     </AuthStack.Navigator>
   );

@@ -9,7 +9,7 @@ const LoginScreen = ({ navigation }) => {
 
     const handleLogin = async () => {
         login({ email, password });
-        navigation.navigate("VerifyCode");
+        navigation.navigate("Chat");
     };
 
     return (
