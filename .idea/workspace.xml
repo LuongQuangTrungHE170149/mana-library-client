@@ -5,18 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4832818b-c8ed-4a92-9d20-ccebf794b5bb" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/navigation/AuthNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/navigation/AuthNavigator.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/navigation/TabNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/navigation/TabNavigator.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/SplashScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/screens/SplashScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/auth/ForgotPasswordScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/screens/auth/ForgotPasswordScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/auth/LoginScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/screens/auth/LoginScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/auth/RegisterScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/screens/auth/RegisterScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/auth/VerifyCodeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/screens/auth/VerifyCodeScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/user/HomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/screens/user/HomeScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/navigation/UserNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/navigation/UserNavigator.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/screens/user/BookDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/screens/user/BookDetailScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/screens/user/BookListScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/screens/user/BookListScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/screenUtils.js" beforeDir="false" afterPath="$PROJECT_DIR$/utils/screenUtils.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
