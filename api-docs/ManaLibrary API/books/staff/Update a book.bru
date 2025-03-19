@@ -1,0 +1,26 @@
+meta {
+  name: Update a book
+  type: http
+  seq: 3
+}
+
+patch {
+  url: http://localhost:8000/api/v1/books/:bookId
+  body: json
+  auth: none
+}
+
+params:path {
+  bookId: 
+}
+
+body:json {
+  {
+    "title": "Updated Title",
+    "author": "Updated Author",
+    "ISBN": "9780743273565",
+    "status": "available",
+    "condition": "excellent",
+    "location": "Fiction Section, Shelf 5"
+  }
+}
