@@ -12,7 +12,7 @@ export const IMPLEMENTED_SCREENS = {
   Register: true,
   ForgotPassword: true,
   VerifyCode: true,
-
+  Chat: true,
   // User screens
   Home: true,
   BooksList: true,

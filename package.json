@@ -9,6 +9,9 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@chatscope/chat-ui-kit-react": "^2.0.3",
+    "@chatscope/chat-ui-kit-styles": "^1.4.0",
+    "@google/generative-ai": "^0.24.0",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/checkbox": "^0.5.17",
     "@react-native-community/slider": "^4.5.6",
@@ -19,6 +22,7 @@
     "expo": "~52.0.38",
     "expo-linear-gradient": "~14.0.2",
     "expo-status-bar": "~2.0.1",
+    "openai": "^4.87.3",
     "react": "18.3.1",
     "react-native": "0.76.7",
     "react-native-checkbox": "^2.0.0",
